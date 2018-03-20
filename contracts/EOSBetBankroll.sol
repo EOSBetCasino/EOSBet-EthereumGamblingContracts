@@ -87,7 +87,7 @@ contract EOSBetBankroll is ERC20, EOSBetBankrollInterface {
 		totalSupply = initialTokens;
 
 		// log a mint tokens event
-		Transfer(0x0, msg.sender, initialTokens);
+		emit Transfer(0x0, msg.sender, initialTokens);
 
 		// insert given game addresses into the TRUSTEDADDRESSES mapping, and save the addresses as global variables
 		TRUSTEDADDRESSES[dice] = true;
@@ -202,10 +202,10 @@ contract EOSBetBankroll is ERC20, EOSBetBankrollInterface {
 		}
 
 		// log an event about funding bankroll
-		FundBankroll(msg.sender, contributedEther, creditedTokens);
+		emit FundBankroll(msg.sender, contributedEther, creditedTokens);
 
 		// log a mint tokens event
-		Transfer(0x0, msg.sender, creditedTokens);
+		emit Transfer(0x0, msg.sender, creditedTokens);
 	}
 
 	function cashoutEOSBetStakeTokens(uint256 _amountTokens) public {
@@ -248,10 +248,10 @@ contract EOSBetBankroll is ERC20, EOSBetBankrollInterface {
 		msg.sender.transfer(contributorAmount);
 
 		// log an event about cashout
-		CashOut(msg.sender, contributorAmount, _amountTokens);
+		emit CashOut(msg.sender, contributorAmount, _amountTokens);
 
 		// log a destroy tokens event
-		Transfer(msg.sender, 0x0, _amountTokens);
+		emit Transfer(msg.sender, 0x0, _amountTokens);
 	}
 
 	function cashoutEOSBetStakeTokens_ALL() public {
@@ -301,8 +301,8 @@ contract EOSBetBankroll is ERC20, EOSBetBankrollInterface {
 		require(msg.sender == OWNER);
 
 		// first get developers fund from each game 
-        EOSBetGameInterface(TRUSTEDADDRESSES[DICE]).payDevelopersFund(receiver);
-		EOSBetGameInterface(TRUSTEDADDRESSES[SLOTS]).payDevelopersFund(receiver);
+        EOSBetGameInterface(DICE).payDevelopersFund(receiver);
+		EOSBetGameInterface(SLOTS).payDevelopersFund(receiver);
 
 		// now send the developers fund from the main contract.
 		uint256 developersFund = DEVELOPERSFUND;
@@ -346,7 +346,7 @@ contract EOSBetBankroll is ERC20, EOSBetBankrollInterface {
 			balances[_to] = SafeMath.add(balances[_to], _value);
 
 			// log event 
-			Transfer(msg.sender, _to, _value);
+			emit Transfer(msg.sender, _to, _value);
 			return true;
 		}
 		else {
@@ -369,7 +369,7 @@ contract EOSBetBankroll is ERC20, EOSBetBankrollInterface {
 	  		allowed[_from][msg.sender] = SafeMath.sub(allowed[_from][msg.sender], _value);
 
 	  		// log event
-    		Transfer(_from, _to, _value);
+    		emit Transfer(_from, _to, _value);
     		return true;
    		} 
     	else { 
@@ -378,11 +378,16 @@ contract EOSBetBankroll is ERC20, EOSBetBankrollInterface {
 	}
 	
 	function approve(address _spender, uint _value) public returns(bool){
-		require(_value > 0);
-		allowed[msg.sender][_spender] = _value;
-		Approval(msg.sender, _spender, _value);
-		// log event
-		return true;
+		if(_value > 0){
+
+			allowed[msg.sender][_spender] = _value;
+			emit Approval(msg.sender, _spender, _value);
+			// log event
+			return true;
+		}
+		else {
+			return false;
+		}
 	}
 	
 	function allowance(address _owner, address _spender) constant public returns(uint){

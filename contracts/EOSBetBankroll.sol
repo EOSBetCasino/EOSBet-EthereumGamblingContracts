@@ -43,7 +43,10 @@ contract EOSBetBankroll is ERC20, EOSBetBankrollInterface {
 	// to the bankroll contract, and when players win, they will request the bankroll contract 
 	// to send these players their winnings.
 	// Feel free to audit these contracts on etherscan...
-	address[2] public TRUSTEDADDRESSES;
+	mapping(address => bool) public TRUSTEDADDRESSES;
+
+	address public DICE;
+	address public SLOTS;
 
 	// mapping to log the last time a user contributed to the bankroll 
 	mapping(address => uint256) contributionTime;
@@ -56,8 +59,8 @@ contract EOSBetBankroll is ERC20, EOSBetBankrollInterface {
 	uint256 public totalSupply;
 
 	// mapping to store tokens
-	mapping(address => uint256) balances;
-	mapping(address => mapping(address => uint256)) allowed;
+	mapping(address => uint256) public balances;
+	mapping(address => mapping(address => uint256)) public allowed;
 
 	// events
 	event FundBankroll(address contributor, uint256 etherContributed, uint256 tokensReceived);
@@ -66,7 +69,7 @@ contract EOSBetBankroll is ERC20, EOSBetBankrollInterface {
 	// checks that an address is a "trusted address of a legitimate EOSBet game"
 	modifier addressInTrustedAddresses(address thisAddress){
 
-		require(TRUSTEDADDRESSES[0] == thisAddress || TRUSTEDADDRESSES[1] == thisAddress);
+		require(TRUSTEDADDRESSES[thisAddress]);
 		_;
 	}
 
@@ -81,20 +84,23 @@ contract EOSBetBankroll is ERC20, EOSBetBankrollInterface {
 		// 100 tokens/ether is the inital seed amount, so:
 		uint256 initialTokens = msg.value * 100;
 		balances[msg.sender] = initialTokens;
-		totalSupply += initialTokens;
+		totalSupply = initialTokens;
 
 		// log a mint tokens event
 		Transfer(0x0, msg.sender, initialTokens);
 
-		// insert given game addresses into the TRUSTEDADDRESSES[] array
-		TRUSTEDADDRESSES[0] = dice;
-		TRUSTEDADDRESSES[1] = slots;
+		// insert given game addresses into the TRUSTEDADDRESSES mapping, and save the addresses as global variables
+		TRUSTEDADDRESSES[dice] = true;
+		TRUSTEDADDRESSES[slots] = true;
+
+		DICE = dice;
+		SLOTS = slots;
 
 		////////////////////////////////////////////////
 		// CHANGE TO 6 HOURS ON LIVE DEPLOYMENT
 		////////////////////////////////////////////////
 		WAITTIMEUNTILWITHDRAWORTRANSFER = 0 seconds;
-		MAXIMUMINVESTMENTSALLOWED = 100 ether;
+		MAXIMUMINVESTMENTSALLOWED = 500 ether;
 	}
 
 	///////////////////////////////////////////////
@@ -121,11 +127,11 @@ contract EOSBetBankroll is ERC20, EOSBetBankrollInterface {
 		winner.transfer(amtEther);
 	}
 
-	function receiveEtherFromGameAddress() payable public addressInTrustedAddresses(msg.sender) {
+	function receiveEtherFromGameAddress() payable public addressInTrustedAddresses(msg.sender){
 		// this function will get called from the game contracts when someone starts a game.
 	}
 
-	function payOraclize(uint256 amountToPay) public addressInTrustedAddresses(msg.sender) {
+	function payOraclize(uint256 amountToPay) public addressInTrustedAddresses(msg.sender){
 		// this function will get called when a game contract must pay payOraclize
 		EOSBetGameInterface(msg.sender).receivePaymentForOraclize.value(amountToPay)();
 	}
@@ -143,9 +149,10 @@ contract EOSBetBankroll is ERC20, EOSBetBankrollInterface {
 
 		// save in memory for cheap access.
 		// this represents the total bankroll balance before the function was called.
-		uint256 currentTotalBankroll = getBankroll() - msg.value;
+		uint256 currentTotalBankroll = SafeMath.sub(getBankroll(), msg.value);
+		uint256 maxInvestmentsAllowed = MAXIMUMINVESTMENTSALLOWED;
 
-		require(currentTotalBankroll < MAXIMUMINVESTMENTSALLOWED && msg.value != 0);
+		require(currentTotalBankroll < maxInvestmentsAllowed && msg.value != 0);
 
 		uint256 currentSupplyOfTokens = totalSupply;
 		uint256 contributedEther;
@@ -153,19 +160,19 @@ contract EOSBetBankroll is ERC20, EOSBetBankrollInterface {
 		bool contributionTakesBankrollOverLimit;
 		uint256 ifContributionTakesBankrollOverLimit_Refund;
 
-		if (SafeMath.add(currentTotalBankroll, msg.value) > MAXIMUMINVESTMENTSALLOWED){
+		uint256 creditedTokens;
+
+		if (SafeMath.add(currentTotalBankroll, msg.value) > maxInvestmentsAllowed){
 			// allow the bankroller to contribute up to the allowed amount of ether, and refund the rest.
 			contributionTakesBankrollOverLimit = true;
 			// set contributed ether as (MAXIMUMINVESTMENTSALLOWED - BANKROLL)
-			contributedEther = SafeMath.sub(MAXIMUMINVESTMENTSALLOWED, currentTotalBankroll);
+			contributedEther = SafeMath.sub(maxInvestmentsAllowed, currentTotalBankroll);
 			// refund the rest of the ether, which is (original amount sent - (maximum amount allowed - bankroll))
 			ifContributionTakesBankrollOverLimit_Refund = SafeMath.sub(msg.value, contributedEther);
 		}
 		else {
 			contributedEther = msg.value;
 		}
-
-        uint256 creditedTokens;
         
 		if (currentSupplyOfTokens != 0){
 			// determine the ratio of contribution versus total BANKROLL.
@@ -294,8 +301,8 @@ contract EOSBetBankroll is ERC20, EOSBetBankrollInterface {
 		require(msg.sender == OWNER);
 
 		// first get developers fund from each game 
-        EOSBetGameInterface(TRUSTEDADDRESSES[0]).payDevelopersFund(receiver);
-		EOSBetGameInterface(TRUSTEDADDRESSES[1]).payDevelopersFund(receiver);
+        EOSBetGameInterface(TRUSTEDADDRESSES[DICE]).payDevelopersFund(receiver);
+		EOSBetGameInterface(TRUSTEDADDRESSES[SLOTS]).payDevelopersFund(receiver);
 
 		// now send the developers fund from the main contract.
 		uint256 developersFund = DEVELOPERSFUND;
@@ -326,6 +333,8 @@ contract EOSBetBankroll is ERC20, EOSBetBankrollInterface {
 		return balances[_owner];
 	}
 
+	// don't allow transfers before the required wait-time
+	// and don't allow transfers to this contract addr, it'll just kill tokens
 	function transfer(address _to, uint256 _value) public returns (bool success){
 		if (balances[msg.sender] >= _value 
 			&& _value > 0 
@@ -345,6 +354,8 @@ contract EOSBetBankroll is ERC20, EOSBetBankrollInterface {
 		}
 	}
 
+	// don't allow transfers before the required wait-time
+	// and don't allow transfers to the contract addr, it'll just kill tokens
 	function transferFrom(address _from, address _to, uint _value) public returns(bool){
 		if (allowed[_from][msg.sender] >= _value 
 			&& balances[_from] >= _value 

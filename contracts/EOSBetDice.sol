@@ -71,9 +71,9 @@ contract EOSBetDice is usingOraclize, EOSBetGameInterface {
 
 		ORACLIZEQUERYMAXTIME = 6 hours;
 		MINBET_forORACLIZE = 350 finney; // 0.35 ether is a limit to prevent an incentive for miners to cheat, any more will be forwarded to oraclize!
-		MINBET = 10 finney;
+		MINBET = 5 finney; // currently this is around $2-2.50 per spin, which is comparable with a very cheap casino
 		HOUSEEDGE_inTHOUSANDTHPERCENTS = 5; // 5/1000 == 0.5% house edge
-		MAXWIN_inTHOUSANDTHPERCENTS = 17; // 17/1000 == 1.7% of bankroll 
+		MAXWIN_inTHOUSANDTHPERCENTS = 35; // 35/1000 == 3.5% of bankroll can be won in a single bet, will be lowered once there is more investors
 		OWNER = msg.sender;
 	}
 
@@ -91,6 +91,7 @@ contract EOSBetDice is usingOraclize, EOSBetGameInterface {
 		developer.transfer(devFund);
 	}
 
+	// just a function to receive eth, only allow the bankroll to use this
 	function receivePaymentForOraclize() payable public {
 		require(msg.sender == BANKROLLER);
 	}
@@ -160,6 +161,7 @@ contract EOSBetDice is usingOraclize, EOSBetGameInterface {
 		HOUSEEDGE_inTHOUSANDTHPERCENTS = houseEdgeInThousandthPercents;
 	}
 
+	// setting this to 0 would just force all bets through oraclize, and setting to MAX_UINT_256 would never use oraclize 
 	function setMinBetForOraclize(uint256 minBet) public {
 		require(msg.sender == OWNER);
 
@@ -203,7 +205,6 @@ contract EOSBetDice is usingOraclize, EOSBetGameInterface {
 
 		// subtract etherReceived because the bet is being refunded
 		LIABILITIES = SafeMath.sub(LIABILITIES, data.etherReceived);
-		AMOUNTWAGERED = SafeMath.sub(AMOUNTWAGERED, data.etherReceived);
 
 		// then transfer the original bet to the player.
 		data.player.transfer(data.etherReceived);
@@ -228,7 +229,7 @@ contract EOSBetDice is usingOraclize, EOSBetGameInterface {
 		// if bets are relatively small, resolve the bet in-house
 		if (betPerRoll < MINBET_forORACLIZE) {
 
-			// again, randomness will be determined by keccak256(blockhash, nonce)
+			// randomness will be determined by keccak256(blockhash, nonce)
 			// store these in memory for cheap access.
 			bytes32 blockHash = block.blockhash(block.number);
 			uint8 houseEdgeInThousandthPercents = HOUSEEDGE_inTHOUSANDTHPERCENTS;
@@ -243,13 +244,10 @@ contract EOSBetDice is usingOraclize, EOSBetGameInterface {
 			// these are the logs for the frontend...
 			uint256[] memory logsData = new uint256[](4);
 
-			uint16 i = 0;
 			uint256 winnings;
-			uint256 gamesPlayed;
+			uint16 gamesPlayed;
 
-			while (i < rolls && etherAvailable >= betPerRoll){
-				// add 1 to gamesPlayed, this is the nonce.
-				gamesPlayed++;
+			while (gamesPlayed < rolls && etherAvailable >= betPerRoll){
 				// this roll is keccak256(blockhash, nonce) + 1 so between 1-100 (inclusive)
 
 				if (uint8(uint256(keccak256(blockHash, gamesPlayed)) % 100) + 1 < rollUnder){
@@ -258,20 +256,22 @@ contract EOSBetDice is usingOraclize, EOSBetGameInterface {
 					winnings = SafeMath.mul(SafeMath.mul(betPerRoll, 100), (1000 - houseEdgeInThousandthPercents)) / (rollUnder - 1) / 1000;
 
 					// now assemble logs for the front end...
-					if (i <= 255){
-						// place a 1 in the i'th bit of data1
-						logsData[0] += uint256(2) ** (255 - i);
+					// game 1 win == 1000000...
+					// games 1 & 2 win == 11000000...
+					// games 1 & 3 win == 1010000000....
+
+					if (gamesPlayed <= 255){
+						logsData[0] += uint256(2) ** (255 - gamesPlayed);
 					}
-					else if (i <= 511){
-						// place a 1 in the (i-256)'th bit of data2
-						logsData[1] += uint256(2) ** (511 - i);
+					else if (gamesPlayed <= 511){
+						logsData[1] += uint256(2) ** (511 - gamesPlayed);
 					}
-					else if (i <= 767){
-						logsData[2] += uint256(2) ** (767 - i);
+					else if (gamesPlayed <= 767){
+						logsData[2] += uint256(2) ** (767 - gamesPlayed);
 					}
 					else {
 						// where i <= 1023
-						logsData[3] += uint256(2) ** (1023 - i);
+						logsData[3] += uint256(2) ** (1023 - gamesPlayed);
 					}
 				}
 				else {
@@ -279,19 +279,21 @@ contract EOSBetDice is usingOraclize, EOSBetGameInterface {
 					winnings = 1;
 					// we don't need to "place a zero" on this roll's spot in the logs, because they are init'ed to zero.
 				}
+				// add 1 to gamesPlayed, this is the nonce.
+				gamesPlayed++;
 
+				// add the winnings, and subtract the betPerRoll cost.
 				etherAvailable = SafeMath.sub(SafeMath.add(etherAvailable, winnings), betPerRoll);
-				i++;
 			}
 
 			// update the gamesPlayed with how many games were played 
 			GAMESPLAYED += gamesPlayed;
 			// update amount wagered with betPerRoll * i (the amount of times the roll loop was executed)
-			AMOUNTWAGERED = SafeMath.add(AMOUNTWAGERED, SafeMath.mul(betPerRoll, i));
+			AMOUNTWAGERED = SafeMath.add(AMOUNTWAGERED, SafeMath.mul(betPerRoll, gamesPlayed));
 
 			// every roll, we will transfer 10% of the profit to the developers fund (profit per roll = house edge)
 			// that is: betPerRoll * (1%) * num rolls * (20%)
-			uint256 developersCut = SafeMath.mul(SafeMath.mul(betPerRoll, houseEdgeInThousandthPercents), i) / 5000;
+			uint256 developersCut = SafeMath.mul(SafeMath.mul(betPerRoll, houseEdgeInThousandthPercents), gamesPlayed) / 5000;
 
 			// add to DEVELOPERSFUND
 			DEVELOPERSFUND = SafeMath.add(DEVELOPERSFUND, developersCut);
@@ -303,7 +305,7 @@ contract EOSBetDice is usingOraclize, EOSBetGameInterface {
 			EOSBetBankrollInterface(BANKROLLER).payEtherToWinner(etherAvailable, msg.sender);
 
 			// log an event, with the outcome of the dice game, so that the frontend can parse it for the player.
-			DiceSmallBet(i, logsData[0], logsData[1], logsData[2], logsData[3]);
+			DiceSmallBet(gamesPlayed, logsData[0], logsData[1], logsData[2], logsData[3]);
 		}
 
 		// // otherwise, we need to save the game data into storage, and call oraclize
@@ -399,12 +401,11 @@ contract EOSBetDice is usingOraclize, EOSBetGameInterface {
 			uint256[] memory logsData = new uint256[](4);
 
 			// this loop is highly similar to the one from before. Instead of fully documented, the differences will be pointed out instead.
-			uint16 i = 0;
 			uint256 winnings;
-			uint256 gamesPlayed;
-			while (i < data.rolls && etherAvailable >= data.betPerRoll){
+			uint16 gamesPlayed;
+
+			while (gamesPlayed < data.rolls && etherAvailable >= data.betPerRoll){
 				
-				gamesPlayed++;
 				// now, this roll is keccak256(_result, nonce) + 1 ... this is the main difference from using oraclize.
 
 				if (uint8(uint256(keccak256(_result, gamesPlayed)) % 100) + 1 < data.rollUnder){
@@ -414,35 +415,32 @@ contract EOSBetDice is usingOraclize, EOSBetGameInterface {
 
 					// assemble logs...
 					if (i <= 255){
-						// place a 1 in the i'th bit of data1
-						logsData[0] += uint256(2) ** (255 - i);
+						logsData[0] += uint256(2) ** (255 - gamesPlayed);
 					}
 					else if (i <= 511){
-						// place a 1 in the (i-256)'th bit of data2
-						logsData[1] += uint256(2) ** (511 - i);
+						logsData[1] += uint256(2) ** (511 - gamesPlayed);
 					}
 					else if (i <= 767){
-						logsData[2] += uint256(2) ** (767 - i);
+						logsData[2] += uint256(2) ** (767 - gamesPlayed);
 					}
 					else {
-						// where i <= 1023
-						logsData[3] += uint256(2) ** (1023 - i);
+						logsData[3] += uint256(2) ** (1023 - gamesPlayed);
 					}
 				}
 				else {
 					//  leave 1 wei as a consolation prize :)
 					winnings = 1;
 				}
-				// add the winnings, and subtract the betPerRoll cost.
+				gamesPlayed++;
+				
 				etherAvailable = SafeMath.sub(SafeMath.add(etherAvailable, winnings), data.betPerRoll);
-				i++;
 			}
 
 			// track that these games were played
 			GAMESPLAYED += gamesPlayed;
 
 			// and add the amount wagered
-			AMOUNTWAGERED = SafeMath.add(AMOUNTWAGERED, SafeMath.mul(data.betPerRoll, i));
+			AMOUNTWAGERED = SafeMath.add(AMOUNTWAGERED, SafeMath.mul(data.betPerRoll, gamesPlayed));
 
 			// IMPORTANT: we must change the "paidOut" to TRUE here to prevent reentrancy/other nasty effects.
 			// this was not needed with the previous loop/code block, and is used because variables must be written into storage
@@ -452,7 +450,7 @@ contract EOSBetDice is usingOraclize, EOSBetGameInterface {
 			LIABILITIES = SafeMath.sub(LIABILITIES, data.etherReceived);
 
 			// get the developers cut, and send the rest of the ether received to the bankroller contract
-			uint256 developersCut = SafeMath.mul(SafeMath.mul(data.betPerRoll, houseEdgeInThousandthPercents), i) / 5000;
+			uint256 developersCut = SafeMath.mul(SafeMath.mul(data.betPerRoll, houseEdgeInThousandthPercents), gamesPlayed) / 5000;
 
 			// add the devs cut to the developers fund.
 			DEVELOPERSFUND = SafeMath.add(DEVELOPERSFUND, developersCut);
@@ -463,7 +461,7 @@ contract EOSBetDice is usingOraclize, EOSBetGameInterface {
 			EOSBetBankrollInterface(BANKROLLER).payEtherToWinner(etherAvailable, data.player);
 
 			// log an event, now with the oraclize query id
-			DiceLargeBet(_queryId, i, logsData[0], logsData[1], logsData[2], logsData[3]);
+			DiceLargeBet(_queryId, gamesPlayed, logsData[0], logsData[1], logsData[2], logsData[3]);
 		}
 	}
 

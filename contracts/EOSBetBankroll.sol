@@ -1,4 +1,4 @@
-pragma solidity ^0.4.18;
+pragma solidity ^0.4.21;
 
 import "./SafeMath.sol";
 
@@ -113,7 +113,7 @@ contract EOSBetBankroll is ERC20, EOSBetBankrollInterface {
 
 	function getBankroll() view public returns(uint256){
 		// returns the total balance minus the developers fund, as the amount of active bankroll
-		return SafeMath.sub(this.balance, DEVELOPERSFUND);
+		return SafeMath.sub(address(this).balance, DEVELOPERSFUND);
 	}
 
 	///////////////////////////////////////////////

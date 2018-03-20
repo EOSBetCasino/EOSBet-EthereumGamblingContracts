@@ -69,7 +69,7 @@ contract EOSBetSlots is usingOraclize, EOSBetGameInterface {
 		ORACLIZEQUERYMAXTIME = 6 hours;
 		MINBET_forORACLIZE = 350 finney; // 0.35 ether is the max bet to avoid miner cheating. see python sim. on our github
 		MINBET = 1 finney; // currently, this is ~40-50c a spin, which is pretty average slots. This is changeable by OWNER 
-        MAXWIN_inTHOUSANDTHPERCENTS = 250; // 250/1000 so a jackpot can take 25% of bankroll (extremely rare)
+        MAXWIN_inTHOUSANDTHPERCENTS = 300; // 300/1000 so a jackpot can take 30% of bankroll (extremely rare)
         OWNER = msg.sender;
 	}
 
@@ -87,6 +87,7 @@ contract EOSBetSlots is usingOraclize, EOSBetGameInterface {
 		developer.transfer(devFund);
 	}
 
+	// just a function to receive eth, only allow the bankroll to use this
 	function receivePaymentForOraclize() payable public {
 		require(msg.sender == BANKROLLER);
 	}
@@ -105,7 +106,7 @@ contract EOSBetSlots is usingOraclize, EOSBetGameInterface {
 
 	// WARNING!!!!! Can only set this function once!
 	function setBankrollerContractOnce(address bankrollAddress) public {
-		// require that BANKROLLER address == 0 (address not set yet), and coming from owner.
+		// require that BANKROLLER address == 0x0 (address not set yet), and coming from owner.
 		require(msg.sender == OWNER && BANKROLLER == address(0));
 
 		// check here to make sure that the bankroll contract is legitimate
@@ -149,6 +150,7 @@ contract EOSBetSlots is usingOraclize, EOSBetGameInterface {
 		REFUNDSACTIVE = active;
 	}
 
+	// setting this to 0 would just force all bets through oraclize, and setting to MAX_UINT_256 would never use oraclize 
 	function setMinBetForOraclize(uint256 minBet) public {
 		require(msg.sender == OWNER);
 
@@ -190,7 +192,6 @@ contract EOSBetSlots is usingOraclize, EOSBetGameInterface {
 
 		// subtract etherReceived from these two values because the bet is being refunded
 		LIABILITIES = SafeMath.sub(LIABILITIES, data.etherReceived);
-		AMOUNTWAGERED = SafeMath.sub(AMOUNTWAGERED, data.etherReceived);
 
 		// then transfer the original bet to the player.
 		data.player.transfer(data.etherReceived);
@@ -200,8 +201,9 @@ contract EOSBetSlots is usingOraclize, EOSBetGameInterface {
 	}
 
 	function play(uint8 credits) public payable {
-		// save these for future use / gas efficiency
+		// save for future use / gas efficiency
 		uint256 betPerCredit = msg.value / credits;
+
 		// require that the game is unpaused, and that the credits being purchased are greater than 0 and less than the allowed amount, default: 100 spins 
 		// verify that the bet is less than or equal to the bet limit, so we don't go bankrupt, and that the etherreceived is greater than the minbet.
 		require(!GAMEPAUSED
@@ -211,11 +213,11 @@ contract EOSBetSlots is usingOraclize, EOSBetGameInterface {
 			&& credits <= 224 //maximum number of spins is 84, must fit in 3 uint256's for logging.
 			&& SafeMath.mul(betPerCredit, 5000) <= getMaxWin()); // 5000 is the jackpot payout (max win on a roll)
 
-		// if each bet is relatively small, we do not need to worry about miner cheating
-		// we can resolve the bet in house with block.blockhash
+		// if each bet is relatively small, resolve the bet in-house
 		if (betPerCredit < MINBET_forORACLIZE){
 
-			// save into memory for cheap access
+			// randomness will be determined by keccak256(blockhash, nonce)
+			// store these into memory for cheap access
 			bytes32 blockHash = block.blockhash(block.number);
 
 			// use dialsSpun as a nonce for the oraclize return random bytes.
@@ -262,7 +264,9 @@ contract EOSBetSlots is usingOraclize, EOSBetGameInterface {
 				// dial 3, based on above table
 				dial3 = getDial3Type(dial3);
 
-				// determine the payout
+				// determine the payouts (all in uint8)
+
+				// this is the jackpot, better will receive 5000x their initial bet!
 				if (dial1 == 2 && dial2 == 1 && dial3 == 0)	
 					payout += 5000;
 				
@@ -294,7 +298,7 @@ contract EOSBetSlots is usingOraclize, EOSBetGameInterface {
 				else if (dial1 == 4 && dial2 == 4 && dial3 == 4) 
 					payout += 25;
 				
-		// 		a little complicated here, but this is the payout for one gold planet, one silver planet, one bronze planet, any order!
+				// a little complicated here, but this is the payout for one gold planet, one silver planet, one bronze planet, any order!
 		        // NOTE: dial1 == 5 && dial2 == 4 && dial3 == 3 covered ^^^ with a better payout!
 				else if ((dial1 == 3 && ((dial2 == 4 && dial3 == 5) || (dial2 == 5 && dial3 == 4)))
 						|| (dial1 == 4 && ((dial2 == 3 && dial3 == 5) || (dial2 == 5 && dial3 == 3)))
@@ -302,27 +306,27 @@ contract EOSBetSlots is usingOraclize, EOSBetGameInterface {
 						
 					payout += 20;
 				
-		// 		all bronze planet 
+				// all bronze planet 
 				else if (dial1 == 5 && dial2 == 5 && dial3 == 5) 
 					payout += 10;
 				
-		// 		any three planet type 
+				// any three planet type 
 				else if (dial1 >= 3 && dial1 <= 5 && dial2 >= 3 && dial2 <= 5 && dial3 >=3 && dial3 <= 5) 
 					payout += 3;
 				
-		// 		any three gold
+				// any three gold
 				else if ((dial1 == 0 || dial1 == 3) && (dial2 == 0 || dial2 == 3) && (dial3 == 0 || dial3 == 3)) 
 					payout += 3;
 				
-		// 		any three silver
+				// any three silver
 				else if ((dial1 == 1 || dial1 == 4) && (dial2 == 1 || dial2 == 4) && (dial3 == 1 || dial3 == 4)) 
 					payout += 2;
 				
-		// 		any three bronze 
+				// any three bronze 
 				else if ((dial1 == 2 || dial1 == 5) && (dial2 == 2 || dial2 == 5) && (dial3 == 2 || dial3 == 5)) 
 					payout += 2;
 				
-		// 		all blank
+				// all blank
 				else if ( dial1 == 6 && dial2 == 6 && dial3 == 6) 
 					payout += 1;
 					
@@ -333,7 +337,7 @@ contract EOSBetSlots is usingOraclize, EOSBetGameInterface {
 				// each "dial" is a uint8 but can only be between 0-6, so would only need 3 bits to store this. uint(bits('111')) = 7
 				// 2 ** 3 is the bitshift operator for three bits 
 				if (i <= 27){
-					// in data0
+					// in logsData0
 					logsData[0] += uint256(dial1) * uint256(2) ** (3 * ((3 * (27 - i)) + 2));
 					logsData[0] += uint256(dial2) * uint256(2) ** (3 * ((3 * (27 - i)) + 1));
 					logsData[0] += uint256(dial3) * uint256(2) ** (3 * ((3 * (27 - i))));
@@ -543,7 +547,7 @@ contract EOSBetSlots is usingOraclize, EOSBetGameInterface {
 				dial3 = getDial3Type(dial3);
 
 				// determine the payout
-                if (dial1 == 2 && dial2 == 1 && dial3 == 0)	
+				if (dial1 == 2 && dial2 == 1 && dial3 == 0)	
 					payout += 5000;
 				
 				// all gold ether
@@ -574,7 +578,7 @@ contract EOSBetSlots is usingOraclize, EOSBetGameInterface {
 				else if (dial1 == 4 && dial2 == 4 && dial3 == 4) 
 					payout += 25;
 				
-		// 		a little complicated here, but this is the payout for one gold planet, one silver planet, one bronze planet, any order!
+				// a little complicated here, but this is the payout for one gold planet, one silver planet, one bronze planet, any order!
 		        // NOTE: dial1 == 5 && dial2 == 4 && dial3 == 3 covered ^^^ with a better payout!
 				else if ((dial1 == 3 && ((dial2 == 4 && dial3 == 5) || (dial2 == 5 && dial3 == 4)))
 						|| (dial1 == 4 && ((dial2 == 3 && dial3 == 5) || (dial2 == 5 && dial3 == 3)))
@@ -582,27 +586,27 @@ contract EOSBetSlots is usingOraclize, EOSBetGameInterface {
 						
 					payout += 20;
 				
-		// 		all bronze planet 
+				// all bronze planet 
 				else if (dial1 == 5 && dial2 == 5 && dial3 == 5) 
 					payout += 10;
 				
-		// 		any three planet type 
+				// any three planet type 
 				else if (dial1 >= 3 && dial1 <= 5 && dial2 >= 3 && dial2 <= 5 && dial3 >=3 && dial3 <= 5) 
 					payout += 3;
 				
-		// 		any three gold
+				// any three gold
 				else if ((dial1 == 0 || dial1 == 3) && (dial2 == 0 || dial2 == 3) && (dial3 == 0 || dial3 == 3)) 
 					payout += 3;
 				
-		// 		any three silver
+				// any three silver
 				else if ((dial1 == 1 || dial1 == 4) && (dial2 == 1 || dial2 == 4) && (dial3 == 1 || dial3 == 4)) 
 					payout += 2;
 				
-		// 		any three bronze 
+				// any three bronze 
 				else if ((dial1 == 2 || dial1 == 5) && (dial2 == 2 || dial2 == 5) && (dial3 == 2 || dial3 == 5)) 
 					payout += 2;
 				
-		// 		all blank
+				// all blank
 				else if ( dial1 == 6 && dial2 == 6 && dial3 == 6) 
 					payout += 1;
 					

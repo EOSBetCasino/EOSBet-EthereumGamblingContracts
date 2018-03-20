@@ -1,4 +1,4 @@
-pragma solidity ^0.4.18;
+pragma solidity ^0.4.21;
 
 import "./usingOraclize.sol";
 import "./EOSBetBankroll.sol";
@@ -197,7 +197,7 @@ contract EOSBetSlots is usingOraclize, EOSBetGameInterface {
 		data.player.transfer(data.etherReceived);
 
 		// finally, log an event saying that the refund has processed.
-		Refund(oraclizeQueryId, data.etherReceived);
+		emit Refund(oraclizeQueryId, data.etherReceived);
 	}
 
 	function play(uint8 credits) public payable {
@@ -410,7 +410,7 @@ contract EOSBetSlots is usingOraclize, EOSBetGameInterface {
 
 			// and lastly, log an event
 			// log the data logs that were created above, we will not use event watchers here, but will use the txReceipt to get logs instead.
-			SlotsSmallBet(logsData[0], logsData[1], logsData[2], logsData[3], logsData[4], logsData[5], logsData[6], logsData[7]);
+			emit SlotsSmallBet(logsData[0], logsData[1], logsData[2], logsData[3], logsData[4], logsData[5], logsData[6], logsData[7]);
 
 		}
 		// if the bet amount is OVER the oraclize query limit, we must get the randomness from oraclize.
@@ -477,7 +477,7 @@ contract EOSBetSlots is usingOraclize, EOSBetGameInterface {
 			// and must be quarantined here to prevent timing attacks
 			LIABILITIES = SafeMath.add(LIABILITIES, msg.value);
 
-			BuyCredits(oraclizeQueryId);
+			emit BuyCredits(oraclizeQueryId);
 		}
 	}
 
@@ -504,10 +504,10 @@ contract EOSBetSlots is usingOraclize, EOSBetGameInterface {
 				data.player.transfer(data.etherReceived);
 
 				// log the refund
-				Refund(_queryId, data.etherReceived);
+				emit Refund(_queryId, data.etherReceived);
 			}
 			// log the ledger proof fail 
-			LedgerProofFailed(_queryId);
+			emit LedgerProofFailed(_queryId);
 			
 		}
 		else {
@@ -690,7 +690,7 @@ contract EOSBetSlots is usingOraclize, EOSBetGameInterface {
 			EOSBetBankrollInterface(BANKROLLER).payEtherToWinner(etherPaidout, data.player);
 
 			// log en event with indexed query id
-			SlotsLargeBet(_queryId, logsData[0], logsData[1], logsData[2], logsData[3], logsData[4], logsData[5], logsData[6], logsData[7]);
+			emit SlotsLargeBet(_queryId, logsData[0], logsData[1], logsData[2], logsData[3], logsData[4], logsData[5], logsData[6], logsData[7]);
 		}
 	}
 	

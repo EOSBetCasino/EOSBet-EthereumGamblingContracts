@@ -1,4 +1,4 @@
-pragma solidity ^0.4.18;
+pragma solidity ^0.4.21;
 
 import "./usingOraclize.sol";
 import "./EOSBetBankroll.sol";
@@ -210,7 +210,7 @@ contract EOSBetDice is usingOraclize, EOSBetGameInterface {
 		data.player.transfer(data.etherReceived);
 
 		// finally, log an event saying that the refund has processed.
-		Refund(oraclizeQueryId, data.etherReceived);
+		emit Refund(oraclizeQueryId, data.etherReceived);
 	}
 
 	function play(uint256 betPerRoll, uint16 rolls, uint8 rollUnder) public payable {
@@ -305,7 +305,7 @@ contract EOSBetDice is usingOraclize, EOSBetGameInterface {
 			EOSBetBankrollInterface(BANKROLLER).payEtherToWinner(etherAvailable, msg.sender);
 
 			// log an event, with the outcome of the dice game, so that the frontend can parse it for the player.
-			DiceSmallBet(gamesPlayed, logsData[0], logsData[1], logsData[2], logsData[3]);
+			emit DiceSmallBet(gamesPlayed, logsData[0], logsData[1], logsData[2], logsData[3]);
 		}
 
 		// // otherwise, we need to save the game data into storage, and call oraclize
@@ -353,7 +353,7 @@ contract EOSBetDice is usingOraclize, EOSBetGameInterface {
 			LIABILITIES = SafeMath.add(LIABILITIES, msg.value);
 
 			// log an event
-			BuyRolls(oraclizeQueryId);
+			emit BuyRolls(oraclizeQueryId);
 		}
 	}
 
@@ -383,10 +383,10 @@ contract EOSBetDice is usingOraclize, EOSBetGameInterface {
 				data.player.transfer(data.etherReceived);
 
 				// log the refund
-				Refund(_queryId, data.etherReceived);
+				emit Refund(_queryId, data.etherReceived);
 			}
 			// log the ledger proof fail
-			LedgerProofFailed(_queryId);
+			emit LedgerProofFailed(_queryId);
 			
 		}
 		// else, resolve the bet as normal with this miner-proof proven-randomness from oraclize.
@@ -414,13 +414,13 @@ contract EOSBetDice is usingOraclize, EOSBetGameInterface {
 					winnings = SafeMath.mul(SafeMath.mul(data.betPerRoll, 100), (1000 - houseEdgeInThousandthPercents)) / (data.rollUnder - 1) / 1000;
 
 					// assemble logs...
-					if (i <= 255){
+					if (gamesPlayed <= 255){
 						logsData[0] += uint256(2) ** (255 - gamesPlayed);
 					}
-					else if (i <= 511){
+					else if (gamesPlayed <= 511){
 						logsData[1] += uint256(2) ** (511 - gamesPlayed);
 					}
-					else if (i <= 767){
+					else if (gamesPlayed <= 767){
 						logsData[2] += uint256(2) ** (767 - gamesPlayed);
 					}
 					else {
@@ -461,7 +461,7 @@ contract EOSBetDice is usingOraclize, EOSBetGameInterface {
 			EOSBetBankrollInterface(BANKROLLER).payEtherToWinner(etherAvailable, data.player);
 
 			// log an event, now with the oraclize query id
-			DiceLargeBet(_queryId, gamesPlayed, logsData[0], logsData[1], logsData[2], logsData[3]);
+			emit DiceLargeBet(_queryId, gamesPlayed, logsData[0], logsData[1], logsData[2], logsData[3]);
 		}
 	}
 

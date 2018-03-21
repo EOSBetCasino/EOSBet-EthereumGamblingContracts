@@ -248,13 +248,16 @@ contract EOSBetDice is usingOraclize, EOSBetGameInterface {
 			uint256 winnings;
 			uint16 gamesPlayed;
 
+			// get this value outside of the loop for gas costs sake
+			uint256 hypotheticalWinAmount = SafeMath.mul(SafeMath.mul(betPerRoll, 100), (1000 - houseEdgeInThousandthPercents)) / (rollUnder - 1) / 1000;
+
 			while (gamesPlayed < rolls && etherAvailable >= betPerRoll){
 				// this roll is keccak256(blockhash, nonce) + 1 so between 1-100 (inclusive)
 
 				if (uint8(uint256(keccak256(blockHash, gamesPlayed)) % 100) + 1 < rollUnder){
 					// winner!
 					// add the winnings to ether avail -> (betPerRoll * probability of hitting this number) * (house edge modifier)
-					winnings = SafeMath.mul(SafeMath.mul(betPerRoll, 100), (1000 - houseEdgeInThousandthPercents)) / (rollUnder - 1) / 1000;
+					winnings = hypotheticalWinAmount;
 
 					// now assemble logs for the front end...
 					// game 1 win == 1000000...
@@ -405,6 +408,9 @@ contract EOSBetDice is usingOraclize, EOSBetGameInterface {
 			uint256 winnings;
 			uint16 gamesPlayed;
 
+			// get this value outside of the loop for gas costs sake
+			uint256 hypotheticalWinAmount = SafeMath.mul(SafeMath.mul(data.betPerRoll, 100), (1000 - houseEdgeInThousandthPercents)) / (data.rollUnder - 1) / 1000;
+
 			while (gamesPlayed < data.rolls && etherAvailable >= data.betPerRoll){
 				
 				// now, this roll is keccak256(_result, nonce) + 1 ... this is the main difference from using oraclize.
@@ -412,7 +418,7 @@ contract EOSBetDice is usingOraclize, EOSBetGameInterface {
 				if (uint8(uint256(keccak256(_result, gamesPlayed)) % 100) + 1 < data.rollUnder){
 
 					// now, just get the respective fields from data.field unlike before where they were in seperate variables.
-					winnings = SafeMath.mul(SafeMath.mul(data.betPerRoll, 100), (1000 - houseEdgeInThousandthPercents)) / (data.rollUnder - 1) / 1000;
+					winnings = hypotheticalWinAmount;
 
 					// assemble logs...
 					if (gamesPlayed <= 255){

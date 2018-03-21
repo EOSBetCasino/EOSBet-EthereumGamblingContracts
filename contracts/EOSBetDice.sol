@@ -198,6 +198,7 @@ contract EOSBetDice is usingOraclize, EOSBetGameInterface {
 			&& (msg.sender == OWNER || msg.sender == data.player)
 			&& (!data.paidOut)
 			&& LIABILITIES >= data.etherReceived
+			&& data.etherReceived > 0
 			&& REFUNDSACTIVE);
 
 		// set paidout == true, so users can't request more refunds, and a super delayed oraclize __callback will just get reverted

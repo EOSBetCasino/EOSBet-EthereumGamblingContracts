@@ -185,6 +185,7 @@ contract EOSBetSlots is usingOraclize, EOSBetGameInterface {
 			&& (msg.sender == OWNER || msg.sender == data.player)
 			&& (!data.paidOut)
 			&& data.etherReceived <= LIABILITIES
+			&& data.etherReceived > 0
 			&& REFUNDSACTIVE);
 
 		// set contract data

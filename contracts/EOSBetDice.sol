@@ -322,24 +322,24 @@ contract EOSBetDice is usingOraclize, EOSBetGameInterface {
 
 			if (rolls <= 256){
 				// force the bankroll to pay for the Oraclize transaction
-				EOSBetBankrollInterface(BANKROLLER).payOraclize(oraclize_getPrice('random', 575000));
+				EOSBetBankrollInterface(BANKROLLER).payOraclize(oraclize_getPrice('random', 415000));
 
-				oraclizeQueryId = oraclize_newRandomDSQuery(0, 30, 575000);
+				oraclizeQueryId = oraclize_newRandomDSQuery(0, 30, 415000);
 			}
 			else if (rolls <= 512){
-				EOSBetBankrollInterface(BANKROLLER).payOraclize(oraclize_getPrice('random', 775000));
+				EOSBetBankrollInterface(BANKROLLER).payOraclize(oraclize_getPrice('random', 650000));
 
-				oraclizeQueryId = oraclize_newRandomDSQuery(0, 30, 775000);
+				oraclizeQueryId = oraclize_newRandomDSQuery(0, 30, 650000);
 			}
 			else if (rolls <= 768){
-				EOSBetBankrollInterface(BANKROLLER).payOraclize(oraclize_getPrice('random', 975000));
+				EOSBetBankrollInterface(BANKROLLER).payOraclize(oraclize_getPrice('random', 915000));
 
-				oraclizeQueryId = oraclize_newRandomDSQuery(0, 30, 975000);
+				oraclizeQueryId = oraclize_newRandomDSQuery(0, 30, 915000);
 			}
 			else {
-				EOSBetBankrollInterface(BANKROLLER).payOraclize(oraclize_getPrice('random', 1200000));
+				EOSBetBankrollInterface(BANKROLLER).payOraclize(oraclize_getPrice('random', 1130000));
 
-				oraclizeQueryId = oraclize_newRandomDSQuery(0, 30, 1200000);
+				oraclizeQueryId = oraclize_newRandomDSQuery(0, 30, 1130000);
 			}
 
 			diceData[oraclizeQueryId] = DiceGameData({

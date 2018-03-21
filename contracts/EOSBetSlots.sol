@@ -428,40 +428,40 @@ contract EOSBetSlots is usingOraclize, EOSBetGameInterface {
 			    oraclizeQueryId = oraclize_newRandomDSQuery(0, 30, 350000);
 			}
 			else if (credits <= 56){
-				EOSBetBankrollInterface(BANKROLLER).payOraclize(oraclize_getPrice('random', 400000));
-
-			    oraclizeQueryId = oraclize_newRandomDSQuery(0, 30, 400000);
-			}
-			else if (credits <= 84){
-				EOSBetBankrollInterface(BANKROLLER).payOraclize(oraclize_getPrice('random', 450000));
-
-			    oraclizeQueryId = oraclize_newRandomDSQuery(0, 30, 450000);
-			}
-			else if (credits <= 112){
-				EOSBetBankrollInterface(BANKROLLER).payOraclize(oraclize_getPrice('random', 500000));
-
-				oraclizeQueryId = oraclize_newRandomDSQuery(0, 30, 500000);
-			}
-			else if (credits <= 140){
-				EOSBetBankrollInterface(BANKROLLER).payOraclize(oraclize_getPrice('random', 550000));
-
-				oraclizeQueryId = oraclize_newRandomDSQuery(0, 30, 550000);
-			}
-			else if (credits <= 168){
 				EOSBetBankrollInterface(BANKROLLER).payOraclize(oraclize_getPrice('random', 600000));
 
-				oraclizeQueryId = oraclize_newRandomDSQuery(0, 30, 600000);
+			    oraclizeQueryId = oraclize_newRandomDSQuery(0, 30, 600000);
 			}
-			else if (credits <= 196){
+			else if (credits <= 84){
 				EOSBetBankrollInterface(BANKROLLER).payOraclize(oraclize_getPrice('random', 650000));
 
-				oraclizeQueryId = oraclize_newRandomDSQuery(0, 30, 650000);
+			    oraclizeQueryId = oraclize_newRandomDSQuery(0, 30, 650000);
 			}
-			else {
-				// credits <= 224
+			else if (credits <= 112){
 				EOSBetBankrollInterface(BANKROLLER).payOraclize(oraclize_getPrice('random', 700000));
 
 				oraclizeQueryId = oraclize_newRandomDSQuery(0, 30, 700000);
+			}
+			else if (credits <= 140){
+				EOSBetBankrollInterface(BANKROLLER).payOraclize(oraclize_getPrice('random', 750000));
+
+				oraclizeQueryId = oraclize_newRandomDSQuery(0, 30, 750000);
+			}
+			else if (credits <= 168){
+				EOSBetBankrollInterface(BANKROLLER).payOraclize(oraclize_getPrice('random', 800000));
+
+				oraclizeQueryId = oraclize_newRandomDSQuery(0, 30, 800000);
+			}
+			else if (credits <= 196){
+				EOSBetBankrollInterface(BANKROLLER).payOraclize(oraclize_getPrice('random', 850000));
+
+				oraclizeQueryId = oraclize_newRandomDSQuery(0, 30, 850000);
+			}
+			else {
+				// credits <= 224
+				EOSBetBankrollInterface(BANKROLLER).payOraclize(oraclize_getPrice('random', 900000));
+
+				oraclizeQueryId = oraclize_newRandomDSQuery(0, 30, 900000);
 			}
 
 			// add the new slots data to a mapping so that the oraclize __callback can use it later

@@ -330,13 +330,11 @@ contract EOSBetDice is usingOraclize, EOSBetGameInterface {
 			bytes32 oraclizeQueryId;
 
 			// equation for gas to oraclize is:
-			// gas = 200,000 + 1005 * rolls
+			// gas = (some fixed gas amt) + 1005 * rolls
 
-			uint256 initialGas = INITIALGASFORORACLIZE;
+			EOSBetBankrollInterface(BANKROLLER).payOraclize(oraclize_getPrice('random', INITIALGASFORORACLIZE + (uint256(1005) * rolls)));
 
-			EOSBetBankrollInterface(BANKROLLER).payOraclize(oraclize_getPrice('random', initialGas + (uint256(1005) * rolls)));
-
-			oraclizeQueryId = oraclize_newRandomDSQuery(0, 30, initialGas + (uint256(1005) * rolls));
+			oraclizeQueryId = oraclize_newRandomDSQuery(0, 30, INITIALGASFORORACLIZE + (uint256(1005) * rolls));
 
 			diceData[oraclizeQueryId] = DiceGameData({
 				player : msg.sender,

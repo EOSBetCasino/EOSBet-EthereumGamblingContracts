@@ -267,72 +267,7 @@ contract EOSBetSlots is usingOraclize, EOSBetGameInterface {
 
 				// determine the payouts (all in uint8)
 
-				// this is the jackpot, better will receive 5000x their initial bet!
-				if (dial1 == 2 && dial2 == 1 && dial3 == 0)	
-					payout += 5000;
-				
-				// all gold ether
-				else if (dial1 == 0 && dial2 == 0 && dial3 == 0) 
-					payout += 1777;
-				
-				// all silver ether 
-				else if (dial1 == 1 && dial2 == 1 && dial3 == 1) 
-					payout += 250;
-				
-				// all bronze ether
-				else if (dial1 == 2 && dial2 == 2 && dial3 == 2) 
-					payout += 250;
-				
-				// all some type of ether
-				else if (dial1 >= 0 && dial1 <= 2 && dial2 >= 0 && dial2 <= 2 && dial3 >= 0 && dial3 <= 2) 
-					payout += 95;
-				
-				// bronze planet -> silver planet -> gold planet
-				else if (dial1 == 5 && dial2 == 4 && dial3 == 3) 
-					payout += 90;
-				
-				// all gold planet
-				else if (dial1 == 3 && dial2 == 3 && dial3 == 3)
-					payout += 50;
-				
-				// all silver planet
-				else if (dial1 == 4 && dial2 == 4 && dial3 == 4) 
-					payout += 25;
-				
-				// a little complicated here, but this is the payout for one gold planet, one silver planet, one bronze planet, any order!
-		        // NOTE: dial1 == 5 && dial2 == 4 && dial3 == 3 covered ^^^ with a better payout!
-				else if ((dial1 == 3 && ((dial2 == 4 && dial3 == 5) || (dial2 == 5 && dial3 == 4)))
-						|| (dial1 == 4 && ((dial2 == 3 && dial3 == 5) || (dial2 == 5 && dial3 == 3)))
-						|| (dial1 == 5 && dial2 == 3 && dial3 == 4) )  
-						
-					payout += 20;
-				
-				// all bronze planet 
-				else if (dial1 == 5 && dial2 == 5 && dial3 == 5) 
-					payout += 10;
-				
-				// any three planet type 
-				else if (dial1 >= 3 && dial1 <= 5 && dial2 >= 3 && dial2 <= 5 && dial3 >=3 && dial3 <= 5) 
-					payout += 3;
-				
-				// any three gold
-				else if ((dial1 == 0 || dial1 == 3) && (dial2 == 0 || dial2 == 3) && (dial3 == 0 || dial3 == 3)) 
-					payout += 3;
-				
-				// any three silver
-				else if ((dial1 == 1 || dial1 == 4) && (dial2 == 1 || dial2 == 4) && (dial3 == 1 || dial3 == 4)) 
-					payout += 2;
-				
-				// any three bronze 
-				else if ((dial1 == 2 || dial1 == 5) && (dial2 == 2 || dial2 == 5) && (dial3 == 2 || dial3 == 5)) 
-					payout += 2;
-				
-				// all blank
-				else if ( dial1 == 6 && dial2 == 6 && dial3 == 6) 
-					payout += 1;
-					
-				else
-					payout += 0;
+				payout += determinePayout(dial1, dial2, dial3);
 
 				// Here we assemble uint256's of log data so that the frontend can "replay" the spins
 				// each "dial" is a uint8 but can only be between 0-6, so would only need 3 bits to store this. uint(bits('111')) = 7
@@ -423,46 +358,46 @@ contract EOSBetSlots is usingOraclize, EOSBetGameInterface {
 
 			if (credits <= 28){
 				// force the bankroll to pay for the Oraclize transaction
-				EOSBetBankrollInterface(BANKROLLER).payOraclize(oraclize_getPrice('random', 350000));
+				EOSBetBankrollInterface(BANKROLLER).payOraclize(oraclize_getPrice('random', 280000));
 
 				// send a new query to oraclize
-			    oraclizeQueryId = oraclize_newRandomDSQuery(0, 30, 350000);
+			    oraclizeQueryId = oraclize_newRandomDSQuery(0, 30, 280000);
 			}
 			else if (credits <= 56){
-				EOSBetBankrollInterface(BANKROLLER).payOraclize(oraclize_getPrice('random', 600000));
+				EOSBetBankrollInterface(BANKROLLER).payOraclize(oraclize_getPrice('random', 405000));
 
-			    oraclizeQueryId = oraclize_newRandomDSQuery(0, 30, 600000);
+			    oraclizeQueryId = oraclize_newRandomDSQuery(0, 30, 405000);
 			}
 			else if (credits <= 84){
-				EOSBetBankrollInterface(BANKROLLER).payOraclize(oraclize_getPrice('random', 650000));
+				EOSBetBankrollInterface(BANKROLLER).payOraclize(oraclize_getPrice('random', 530000));
 
-			    oraclizeQueryId = oraclize_newRandomDSQuery(0, 30, 650000);
+			    oraclizeQueryId = oraclize_newRandomDSQuery(0, 30, 530000);
 			}
 			else if (credits <= 112){
-				EOSBetBankrollInterface(BANKROLLER).payOraclize(oraclize_getPrice('random', 700000));
+				EOSBetBankrollInterface(BANKROLLER).payOraclize(oraclize_getPrice('random', 650000));
 
-				oraclizeQueryId = oraclize_newRandomDSQuery(0, 30, 700000);
+				oraclizeQueryId = oraclize_newRandomDSQuery(0, 30, 650000);
 			}
 			else if (credits <= 140){
-				EOSBetBankrollInterface(BANKROLLER).payOraclize(oraclize_getPrice('random', 750000));
+				EOSBetBankrollInterface(BANKROLLER).payOraclize(oraclize_getPrice('random', 2000000));
 
-				oraclizeQueryId = oraclize_newRandomDSQuery(0, 30, 750000);
+				oraclizeQueryId = oraclize_newRandomDSQuery(0, 30, 2000000);
 			}
 			else if (credits <= 168){
-				EOSBetBankrollInterface(BANKROLLER).payOraclize(oraclize_getPrice('random', 800000));
+				EOSBetBankrollInterface(BANKROLLER).payOraclize(oraclize_getPrice('random', 2000000));
 
-				oraclizeQueryId = oraclize_newRandomDSQuery(0, 30, 800000);
+				oraclizeQueryId = oraclize_newRandomDSQuery(0, 30, 2000000);
 			}
 			else if (credits <= 196){
-				EOSBetBankrollInterface(BANKROLLER).payOraclize(oraclize_getPrice('random', 850000));
+				EOSBetBankrollInterface(BANKROLLER).payOraclize(oraclize_getPrice('random', 2000000));
 
-				oraclizeQueryId = oraclize_newRandomDSQuery(0, 30, 850000);
+				oraclizeQueryId = oraclize_newRandomDSQuery(0, 30, 2000000);
 			}
 			else {
 				// credits <= 224
-				EOSBetBankrollInterface(BANKROLLER).payOraclize(oraclize_getPrice('random', 900000));
+				EOSBetBankrollInterface(BANKROLLER).payOraclize(oraclize_getPrice('random', 2000000));
 
-				oraclizeQueryId = oraclize_newRandomDSQuery(0, 30, 900000);
+				oraclizeQueryId = oraclize_newRandomDSQuery(0, 30, 2000000);
 			}
 
 			// add the new slots data to a mapping so that the oraclize __callback can use it later
@@ -548,71 +483,7 @@ contract EOSBetSlots is usingOraclize, EOSBetGameInterface {
 				dial3 = getDial3Type(dial3);
 
 				// determine the payout
-				if (dial1 == 2 && dial2 == 1 && dial3 == 0)	
-					payout += 5000;
-				
-				// all gold ether
-				else if (dial1 == 0 && dial2 == 0 && dial3 == 0) 
-					payout += 1777;
-				
-				// all silver ether 
-				else if (dial1 == 1 && dial2 == 1 && dial3 == 1) 
-					payout += 250;
-				
-				// all bronze ether
-				else if (dial1 == 2 && dial2 == 2 && dial3 == 2) 
-					payout += 250;
-				
-				// all some type of ether
-				else if (dial1 >= 0 && dial1 <= 2 && dial2 >= 0 && dial2 <= 2 && dial3 >= 0 && dial3 <= 2) 
-					payout += 95;
-				
-				// bronze planet -> silver planet -> gold planet
-				else if (dial1 == 5 && dial2 == 4 && dial3 == 3) 
-					payout += 90;
-				
-				// all gold planet
-				else if (dial1 == 3 && dial2 == 3 && dial3 == 3)
-					payout += 50;
-				
-				// all silver planet
-				else if (dial1 == 4 && dial2 == 4 && dial3 == 4) 
-					payout += 25;
-				
-				// a little complicated here, but this is the payout for one gold planet, one silver planet, one bronze planet, any order!
-		        // NOTE: dial1 == 5 && dial2 == 4 && dial3 == 3 covered ^^^ with a better payout!
-				else if ((dial1 == 3 && ((dial2 == 4 && dial3 == 5) || (dial2 == 5 && dial3 == 4)))
-						|| (dial1 == 4 && ((dial2 == 3 && dial3 == 5) || (dial2 == 5 && dial3 == 3)))
-						|| (dial1 == 5 && dial2 == 3 && dial3 == 4) )  
-						
-					payout += 20;
-				
-				// all bronze planet 
-				else if (dial1 == 5 && dial2 == 5 && dial3 == 5) 
-					payout += 10;
-				
-				// any three planet type 
-				else if (dial1 >= 3 && dial1 <= 5 && dial2 >= 3 && dial2 <= 5 && dial3 >=3 && dial3 <= 5) 
-					payout += 3;
-				
-				// any three gold
-				else if ((dial1 == 0 || dial1 == 3) && (dial2 == 0 || dial2 == 3) && (dial3 == 0 || dial3 == 3)) 
-					payout += 3;
-				
-				// any three silver
-				else if ((dial1 == 1 || dial1 == 4) && (dial2 == 1 || dial2 == 4) && (dial3 == 1 || dial3 == 4)) 
-					payout += 2;
-				
-				// any three bronze 
-				else if ((dial1 == 2 || dial1 == 5) && (dial2 == 2 || dial2 == 5) && (dial3 == 2 || dial3 == 5)) 
-					payout += 2;
-				
-				// all blank
-				else if ( dial1 == 6 && dial2 == 6 && dial3 == 6) 
-					payout += 1;
-					
-				else
-					payout += 0;
+				payout += determinePayout(dial1, dial2, dial3);
 				
 				// assembling log data
 				if (i <= 27){
@@ -765,73 +636,111 @@ contract EOSBetSlots is usingOraclize, EOSBetGameInterface {
 	// else								//  0     //
 	////////////////////////////////////////////////
 	
-// 	function determinePayout(uint8 dial1, uint8 dial2, uint8 dial3) internal pure returns(uint256) {
-// 		// bronze ether -> silver ether -> gold ether -- JACKPOT!!!!!!
-// 		if (dial1 == 2 && dial2 == 1 && dial3 == 0)	
-// 			return 5000;
-		
-// 		// all gold ether
-// 		else if (dial1 == 0 && dial2 == 0 && dial3 == 0) 
-// 			return 1777;
-		
-// 		// all silver ether 
-// 		else if (dial1 == 1 && dial2 == 1 && dial3 == 1) 
-// 			return 250;
-		
-// 		// all bronze ether
-// 		else if (dial1 == 2 && dial2 == 2 && dial3 == 2) 
-// 			return 250;
-		
-// 		// all some type of ether
-// 		else if (dial1 >= 0 && dial1 <= 2 && dial2 >= 0 && dial2 <= 2 && dial3 >= 0 && dial3 <= 2) 
-// 			return 95;
-		
-// 		// bronze planet -> silver planet -> gold planet
-// 		else if (dial1 == 5 && dial2 == 4 && dial3 == 3) 
-// 			return 90;
-		
-// 		// all gold planet
-// 		else if (dial1 == 3 && dial2 == 3 && dial3 == 3)
-// 			return 50;
-		
-// 		// all silver planet
-// 		else if (dial1 == 4 && dial2 == 4 && dial3 == 4) 
-// 			return 25;
-		
-// // 		a little complicated here, but this is the payout for one gold planet, one silver planet, one bronze planet, any order!
-//         // NOTE: dial1 == 5 && dial2 == 4 && dial3 == 3 covered ^^^ with a better payout!
-// 		else if ((dial1 == 3 && ((dial2 == 4 && dial3 == 5) || (dial2 == 5 && dial3 == 4)))
-// 				|| (dial1 == 4 && ((dial2 == 3 && dial3 == 5) || (dial2 == 5 && dial3 == 3)))
-// 				|| (dial1 == 5 && dial2 == 3 && dial3 == 4) )  
-				
-// 			return 20;
-		
-// // 		all bronze planet 
-// 		else if (dial1 == 5 && dial2 == 5 && dial3 == 5) 
-// 			return 10;
-		
-// // 		any three planet type 
-// 		else if (dial1 >= 3 && dial1 <= 5 && dial2 >= 3 && dial2 <= 5 && dial3 >=3 && dial3 <= 5) 
-// 			return 3;
-		
-// // 		any three gold
-// 		else if ((dial1 == 0 || dial1 == 3) && (dial2 == 0 || dial2 == 3) && (dial3 == 0 || dial3 == 3)) 
-// 			return 3;
-		
-// // 		any three silver
-// 		else if ((dial1 == 1 || dial1 == 4) && (dial2 == 1 || dial2 == 4) && (dial3 == 1 || dial3 == 4)) 
-// 			return 2;
-		
-// // 		any three bronze 
-// 		else if ((dial1 == 2 || dial1 == 5) && (dial2 == 2 || dial2 == 5) && (dial3 == 2 || dial3 == 5)) 
-// 			return 2;
-		
-// // 		all blank
-// 		else if ( dial1 == 6 && dial2 == 6 && dial3 == 6) 
-// 			return 1;
+	function determinePayout(uint8 dial1, uint8 dial2, uint8 dial3) internal pure returns(uint256) {
+		if (dial1 == 6 || dial2 == 6 || dial3 == 6){
+			// all blank
+			if (dial1 == 6 && dial2 == 6 && dial3 == 6)
+				return 1;
+		}
+		else if (dial1 == 5){
+			// bronze planet -> silver planet -> gold planet
+			if (dial2 == 4 && dial3 == 3) 
+				return 90;
 
-// 		else
-// 			return 0;
-// 	}
+			// one gold planet, one silver planet, one bronze planet, any order!
+			// note: other order covered above, return 90
+			else if (dial2 == 3 && dial3 == 4)
+				return 20;
+
+			// all bronze planet 
+			else if (dial2 == 5 && dial3 == 5) 
+				return 10;
+
+			// any three planet type 
+			else if (dial2 >= 3 && dial2 <= 5 && dial3 >= 3 && dial3 <= 5)
+				return 3;
+
+			// any three bronze 
+			else if ((dial2 == 2 || dial2 == 5) && (dial3 == 2 || dial3 == 5))
+				return 2;
+		}
+		else if (dial1 == 4){
+			// all silver planet
+			if (dial2 == 4 && dial3 == 4)
+				return 25;
+
+			// one gold planet, one silver planet, one bronze planet, any order!
+			else if ((dial2 == 3 && dial3 == 5) || (dial2 == 5 && dial3 == 3))
+				return 20;
+
+			// any three planet type 
+			else if (dial2 >= 3 && dial2 <= 5 && dial3 >= 3 && dial3 <= 5)
+				return 3;
+
+			// any three silver
+			else if ((dial2 == 1 || dial2 == 4) && (dial3 == 1 || dial3 == 4))
+				return 2;
+		}
+		else if (dial1 == 3){
+			// all gold planet
+			if (dial2 == 3 && dial3 == 3)
+				return 50;
+
+			// one gold planet, one silver planet, one bronze planet, any order!
+			else if ((dial2 == 4 && dial3 == 5) || (dial2 == 5 && dial3 == 4))
+				return 20;
+
+			// any three planet type 
+			else if (dial2 >= 3 && dial2 <= 5 && dial3 >= 3 && dial3 <= 5)
+				return 3;
+
+			// any three gold
+			else if ((dial2 == 0 || dial2 == 3) && (dial3 == 0 || dial3 == 3))
+				return 3;
+		}
+		else if (dial1 == 2){
+			if (dial2 == 1 && dial3 == 0)
+				return 5000; // jackpot!!!!
+
+			// all bronze ether
+			else if (dial2 == 2 && dial3 == 2)
+				return 250;
+
+			// all some type of ether
+			else if (dial2 >= 0 && dial2 <= 2 && dial3 >= 0 && dial3 <= 2)
+				return 95;
+
+			// any three bronze
+			else if ((dial2 == 2 || dial2 == 5) && (dial3 == 2 || dial3 == 5))
+				return 2;
+		}
+		else if (dial1 == 1){
+			// all silver ether 
+			if (dial2 == 1 && dial3 == 1)
+				return 250;
+
+			// all some type of ether
+			else if (dial2 >= 0 && dial2 <= 2 && dial3 >= 0 && dial3 <= 2)
+				return 95;
+
+			// any three silver
+			else if ((dial2 == 1 || dial2 == 4) && (dial3 == 1 || dial3 == 4))
+				return 3;
+		}
+		else if (dial1 == 0){
+			// all gold ether
+			if (dial2 == 0 && dial3 == 0)
+				return 1777;
+
+			// all some type of ether
+			else if (dial2 >= 0 && dial2 <= 2 && dial3 >= 0 && dial3 <= 2)
+				return 95;
+
+			// any three gold
+			else if ((dial2 == 0 || dial2 == 3) && (dial3 == 0 || dial3 == 3))
+				return 3;
+		}
+		return 0;
+	}
 
 }

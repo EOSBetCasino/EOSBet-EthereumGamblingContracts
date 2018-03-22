@@ -41,6 +41,7 @@ contract EOSBetDice is usingOraclize, EOSBetGameInterface {
 	uint256 public MINBET_forORACLIZE;
 	uint256 public MINBET;
 	uint256 public ORACLIZEGASPRICE;
+	uint256 public INITIALGASFORORACLIZE;
 	uint8 public HOUSEEDGE_inTHOUSANDTHPERCENTS; // 1 thousanthpercent == 1/1000, 
 	uint8 public MAXWIN_inTHOUSANDTHPERCENTS; // determines the maximum win a user may receive.
 
@@ -62,6 +63,7 @@ contract EOSBetDice is usingOraclize, EOSBetGameInterface {
 		// gas prices for oraclize call back, can be changed
 		oraclize_setCustomGasPrice(10000000000);
 		ORACLIZEGASPRICE = 10000000000;
+		INITIALGASFORORACLIZE = 225000;
 
 		AMOUNTWAGERED = 0;
 		GAMESPLAYED = 0;
@@ -134,12 +136,19 @@ contract EOSBetDice is usingOraclize, EOSBetGameInterface {
 	}
 
 	// store the gas price as a storage variable for easy reference,
-	// and thne change the gas price using the proper oraclize function
+	// and then change the gas price using the proper oraclize function
 	function setOraclizeQueryGasPrice(uint256 gasPrice) public {
 		require(msg.sender == OWNER);
 
 		ORACLIZEGASPRICE = gasPrice;
 		oraclize_setCustomGasPrice(gasPrice);
+	}
+
+	// should be ~175,000 to save eth
+	function setInitialGasForOraclize(uint256 gasAmt) public {
+		require(msg.sender == OWNER);
+
+		INITIALGASFORORACLIZE = gasAmt;
 	}
 
 	function setGamePaused(bool paused) public {
@@ -320,27 +329,14 @@ contract EOSBetDice is usingOraclize, EOSBetGameInterface {
 			// oraclize_newRandomDSQuery(delay in seconds, bytes of random data, gas for callback function)
 			bytes32 oraclizeQueryId;
 
-			if (rolls <= 256){
-				// force the bankroll to pay for the Oraclize transaction
-				EOSBetBankrollInterface(BANKROLLER).payOraclize(oraclize_getPrice('random', 415000));
+			// equation for gas to oraclize is:
+			// gas = 200,000 + 1005 * rolls
 
-				oraclizeQueryId = oraclize_newRandomDSQuery(0, 30, 415000);
-			}
-			else if (rolls <= 512){
-				EOSBetBankrollInterface(BANKROLLER).payOraclize(oraclize_getPrice('random', 650000));
+			uint256 initialGas = INITIALGASFORORACLIZE;
 
-				oraclizeQueryId = oraclize_newRandomDSQuery(0, 30, 650000);
-			}
-			else if (rolls <= 768){
-				EOSBetBankrollInterface(BANKROLLER).payOraclize(oraclize_getPrice('random', 915000));
+			EOSBetBankrollInterface(BANKROLLER).payOraclize(oraclize_getPrice('random', initialGas + (uint256(1005) * rolls)));
 
-				oraclizeQueryId = oraclize_newRandomDSQuery(0, 30, 915000);
-			}
-			else {
-				EOSBetBankrollInterface(BANKROLLER).payOraclize(oraclize_getPrice('random', 1130000));
-
-				oraclizeQueryId = oraclize_newRandomDSQuery(0, 30, 1130000);
-			}
+			oraclizeQueryId = oraclize_newRandomDSQuery(0, 30, initialGas + (uint256(1005) * rolls));
 
 			diceData[oraclizeQueryId] = DiceGameData({
 				player : msg.sender,

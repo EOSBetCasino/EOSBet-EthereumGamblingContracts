@@ -39,6 +39,7 @@ contract EOSBetSlots is usingOraclize, EOSBetGameInterface {
 	uint256 public MINBET_forORACLIZE;
 	uint256 public MINBET;
 	uint256 public ORACLIZEGASPRICE;
+	uint256 public INITIALGASFORORACLIZE;
 	uint16 public MAXWIN_inTHOUSANDTHPERCENTS;
 
 	// togglable functionality of contract
@@ -59,6 +60,7 @@ contract EOSBetSlots is usingOraclize, EOSBetGameInterface {
 		// gas prices for oraclize call back, can be changed
 		oraclize_setCustomGasPrice(10000000000);
 		ORACLIZEGASPRICE = 10000000000;
+		INITIALGASFORORACLIZE = 225000;
 
 		AMOUNTWAGERED = 0;
 		DIALSSPUN = 0;
@@ -136,6 +138,13 @@ contract EOSBetSlots is usingOraclize, EOSBetGameInterface {
 
 		ORACLIZEGASPRICE = gasPrice;
 		oraclize_setCustomGasPrice(gasPrice);
+	}
+
+	// should be ~155,000 to save eth
+	function setInitialGasForOraclize(uint256 gasAmt) public {
+		require(msg.sender == OWNER);
+
+		INITIALGASFORORACLIZE = gasAmt;
 	}
 
 	function setGamePaused(bool paused) public {
@@ -356,49 +365,14 @@ contract EOSBetSlots is usingOraclize, EOSBetGameInterface {
 			// oraclize_newRandomDSQuery(delay in seconds, bytes of random data, gas for callback function)
 			bytes32 oraclizeQueryId;
 
-			if (credits <= 28){
-				// force the bankroll to pay for the Oraclize transaction
-				EOSBetBankrollInterface(BANKROLLER).payOraclize(oraclize_getPrice('random', 280000));
+			// equation for gas to oraclize is:
+			// gas = (some fixed gas amt) + 3270 * credits
+			
+			uint256 gasToSend = INITIALGASFORORACLIZE + (uint256(3270) * credits);
 
-				// send a new query to oraclize
-			    oraclizeQueryId = oraclize_newRandomDSQuery(0, 30, 280000);
-			}
-			else if (credits <= 56){
-				EOSBetBankrollInterface(BANKROLLER).payOraclize(oraclize_getPrice('random', 405000));
+			EOSBetBankrollInterface(BANKROLLER).payOraclize(oraclize_getPrice('random', gasToSend));
 
-			    oraclizeQueryId = oraclize_newRandomDSQuery(0, 30, 405000);
-			}
-			else if (credits <= 84){
-				EOSBetBankrollInterface(BANKROLLER).payOraclize(oraclize_getPrice('random', 530000));
-
-			    oraclizeQueryId = oraclize_newRandomDSQuery(0, 30, 530000);
-			}
-			else if (credits <= 112){
-				EOSBetBankrollInterface(BANKROLLER).payOraclize(oraclize_getPrice('random', 650000));
-
-				oraclizeQueryId = oraclize_newRandomDSQuery(0, 30, 650000);
-			}
-			else if (credits <= 140){
-				EOSBetBankrollInterface(BANKROLLER).payOraclize(oraclize_getPrice('random', 2000000));
-
-				oraclizeQueryId = oraclize_newRandomDSQuery(0, 30, 2000000);
-			}
-			else if (credits <= 168){
-				EOSBetBankrollInterface(BANKROLLER).payOraclize(oraclize_getPrice('random', 2000000));
-
-				oraclizeQueryId = oraclize_newRandomDSQuery(0, 30, 2000000);
-			}
-			else if (credits <= 196){
-				EOSBetBankrollInterface(BANKROLLER).payOraclize(oraclize_getPrice('random', 2000000));
-
-				oraclizeQueryId = oraclize_newRandomDSQuery(0, 30, 2000000);
-			}
-			else {
-				// credits <= 224
-				EOSBetBankrollInterface(BANKROLLER).payOraclize(oraclize_getPrice('random', 2000000));
-
-				oraclizeQueryId = oraclize_newRandomDSQuery(0, 30, 2000000);
-			}
+			oraclizeQueryId = oraclize_newRandomDSQuery(0, 30, gasToSend);
 
 			// add the new slots data to a mapping so that the oraclize __callback can use it later
 			slotsData[oraclizeQueryId] = SlotsGameData({

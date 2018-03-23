@@ -127,12 +127,17 @@ contract EOSBetBankroll is ERC20, EOSBetBankrollInterface {
 		// note, this will only happen if someone is calling the betting functions with
 		// a contract. They are clearly up to no good, so they can contact us to retreive 
 		// their ether
+		// if the ether cannot be sent to us, the OWNER, that means we are up to no good, 
+		// and the ether will just be given to the bankrollers as if the player/owner lost 
 
 		if (! winner.send(amtEther)){
 
 			emit FailedSend(winner, amtEther);
 
-			OWNER.transfer(amtEther);
+			if (!OWNER.send(amtEther)){
+
+				emit FailedSend(OWNER, amtEther);
+			}
 		}
 	}
 

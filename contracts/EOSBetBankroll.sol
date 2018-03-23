@@ -65,6 +65,7 @@ contract EOSBetBankroll is ERC20, EOSBetBankrollInterface {
 	// events
 	event FundBankroll(address contributor, uint256 etherContributed, uint256 tokensReceived);
 	event CashOut(address contributor, uint256 etherWithdrawn, uint256 tokensCashedIn);
+	event FailedSend(address sendTo, uint256 amt);
 
 	// checks that an address is a "trusted address of a legitimate EOSBet game"
 	modifier addressInTrustedAddresses(address thisAddress){
@@ -104,7 +105,7 @@ contract EOSBetBankroll is ERC20, EOSBetBankrollInterface {
 	}
 
 	///////////////////////////////////////////////
-	// VIEW FUNCTIONS -> mainly for frontend
+	// VIEW FUNCTIONS
 	/////////////////////////////////////////////// 
 
 	function checkWhenContributorCanTransferOrWithdraw(address bankrollerAddress) view public returns(uint256){
@@ -122,9 +123,17 @@ contract EOSBetBankroll is ERC20, EOSBetBankrollInterface {
 
 	function payEtherToWinner(uint256 amtEther, address winner) public addressInTrustedAddresses(msg.sender){
 		// this function will get called by a game contract when someone wins a game
-		// note, a failed transfer to a player will propagate the OP_REVERT.
+		// try to send, if it fails, then send the amount to the owner
+		// note, this will only happen if someone is calling the betting functions with
+		// a contract. They are clearly up to no good, so they can contact us to retreive 
+		// their ether
 
-		winner.transfer(amtEther);
+		if (! winner.send(amtEther)){
+
+			emit FailedSend(winner, amtEther);
+
+			OWNER.transfer(amtEther);
+		}
 	}
 
 	function receiveEtherFromGameAddress() payable public addressInTrustedAddresses(msg.sender){
@@ -181,7 +190,7 @@ contract EOSBetBankroll is ERC20, EOSBetBankrollInterface {
 		else {
 			// edge case where ALL money was cashed out from bankroll
 			// so currentSupplyOfTokens == 0
-			// currentTotalBankroll can == 0 or not, if someone mines/sefldestruct's to the contract
+			// currentTotalBankroll can == 0 or not, if someone mines/selfdestruct's to the contract
 			// but either way, give all the bankroll to person who deposits ether
 			creditedTokens = SafeMath.mul(contributedEther, 100);
 		}

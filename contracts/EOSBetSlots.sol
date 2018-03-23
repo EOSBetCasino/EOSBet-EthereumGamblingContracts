@@ -140,7 +140,7 @@ contract EOSBetSlots is usingOraclize, EOSBetGameInterface {
 		oraclize_setCustomGasPrice(gasPrice);
 	}
 
-	// should be ~155,000 to save eth
+	// should be ~160,000 to save eth
 	function setInitialGasForOraclize(uint256 gasAmt) public {
 		require(msg.sender == OWNER);
 
@@ -190,7 +190,7 @@ contract EOSBetSlots is usingOraclize, EOSBetGameInterface {
 		SlotsGameData memory data = slotsData[oraclizeQueryId];
 
 		//require that the query time is too slow, bet has not been paid out, and either contract owner or player is calling this function.
-		require(block.timestamp - data.start >= ORACLIZEQUERYMAXTIME
+		require(SafeMath.sub(block.timestamp, data.start) >= ORACLIZEQUERYMAXTIME
 			&& (msg.sender == OWNER || msg.sender == data.player)
 			&& (!data.paidOut)
 			&& data.etherReceived <= LIABILITIES
@@ -220,7 +220,7 @@ contract EOSBetSlots is usingOraclize, EOSBetGameInterface {
 			&& msg.value > 0
 			&& betPerCredit >= MINBET
 			&& credits > 0 
-			&& credits <= 224 //maximum number of spins is 84, must fit in 3 uint256's for logging.
+			&& credits <= 224
 			&& SafeMath.mul(betPerCredit, 5000) <= getMaxWin()); // 5000 is the jackpot payout (max win on a roll)
 
 		// if each bet is relatively small, resolve the bet in-house
@@ -323,7 +323,7 @@ contract EOSBetSlots is usingOraclize, EOSBetGameInterface {
 					logsData[6] += uint256(dial2) * uint256(2) ** (3 * ((3 * (195 - i)) + 1));
 					logsData[6] += uint256(dial3) * uint256(2) ** (3 * ((3 * (195 - i))));
 				}
-				else if (i <= 223){
+				else {
 					// in logsData7
 					logsData[7] += uint256(dial1) * uint256(2) ** (3 * ((3 * (223 - i)) + 2));
 					logsData[7] += uint256(dial2) * uint256(2) ** (3 * ((3 * (223 - i)) + 1));

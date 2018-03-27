@@ -1,10 +1,10 @@
-#WELCOME TO EOSBet.IO!!!
+# WELCOME TO EOSBet.IO!!!
 
-##This is the directory for our Ethereum Gambling contracts.
+## This is the directory for our Ethereum Gambling contracts.
 
-###We are currently running a bug bounty, please see the Reddit thread:
+### We are currently running a bug bounty, please see the Reddit thread:
 
-####Here is a quick description of our gambling system:
+#### Here is a quick description of our gambling system:
 
 Our contract system is fairly simple. There are 3 main contracts, `EOSBetBankroll.sol`, `EOSBetSlots.sol`, and `EOSBetDice.sol`.
 
@@ -33,9 +33,9 @@ Finally, note that everything is supposed to be trustless in the game contracts.
 Yes, we will take out the `emergencySelfDestruct()` function when entering production. No, this is not a bug that can be caught in our bug bounty program.
 
 
-####Now lets dive a little deeper into our contracts:
+#### Now lets dive a little deeper into our contracts:
 
-#####EOSBetDice.sol & EOSBetSlots.sol
+##### EOSBetDice.sol & EOSBetSlots.sol
 
 All games must follow the `contract EOSBetGameInterface{}` interface contract. This is as follows:
 
@@ -59,7 +59,7 @@ Second, we have the `LIABILITIES`. All large bets will initially increment the l
 
 `getMaxWin() view` is a function that asks the BANKROLLER contract to see how much investment there is in the bankroll, and then determines the maximum win size, that a bettor can win. We don't want to accept too large of bets and go bankrupt!!
 
-#####EOSBetDice.sol
+##### EOSBetDice.sol
 
 We start off with a bunch of owner only functions to change parameters to the games. Dangerous parameters have a cap on them, that even the owner cannot go above when he is calling the functions. Pretty straightforward...
 
@@ -87,7 +87,7 @@ In the `__callback` function, it is basically the same gameplay. However, note t
 
 **However**, if we feel that oraclize is cheating (will be easily detectable), then we can just toggle off `REFUNDSACTIVE`. We would like to keep them on, of course, so that our players have a better experience. :)
 
-#####EOSBetSlots.sol
+##### EOSBetSlots.sol
 
 Slots is a *very* similar contract, of course, and just about everything that was said about dice, also applies to slots. However, the gameplay is obviously different, and more complex.
 
@@ -136,7 +136,7 @@ There we loop though all the credits, find the payout given each combination, an
 
 There are found in our code too, for easy reference.
 
-#####EOSBetBankroll.sol
+##### EOSBetBankroll.sol
 
 The bankroll is in charge of all payouts, like the cashier at a casino. 
 
@@ -161,15 +161,15 @@ Note that there is a required stake time that users must leave their funds locke
 
 After this, is just basic ERC20 functionality. We do not allow users to transfer tokens until their locktime is up, or it would be too difficult to keep track of which tokens are not allowed to be cashed out. We also do not allow transfers to address(this) because it will just burn tokens. ALL ERC20 CONTRACTS NEED TO START DOING THIS, TOO MANY TOKENS GET WASTED!
 
-######usingOraclize.sol
+###### usingOraclize.sol
 
 This is the standard oraclize contract, and is out of scope of this bug bounty. But, if there are issues you find, definitely bring it up with the oraclize team, I'm sure they have a much larger bounty than I could afford!
 
-#####SafeMath.sol
+##### SafeMath.sol
 
 This is standard Zeppelin SafeMath, again, issues should be brought up with the Zeppelin team!
 
-#####END
+##### END
 
 This is the end of the contract descriptions, please see this reddit thread for more details about our audit, we have some generous payouts!
 
@@ -236,10 +236,6 @@ iBNTpi4g5EPO
 -----END PGP PUBLIC KEY BLOCK-----
 
 ```
-
-
-
-
 
 
 

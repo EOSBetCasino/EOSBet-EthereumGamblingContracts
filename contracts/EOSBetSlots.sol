@@ -231,172 +231,30 @@ contract EOSBetSlots is usingOraclize, EOSBetGameInterface {
 			&& credits <= 224
 			&& SafeMath.mul(betPerCredit, 5000) <= getMaxWin()); // 5000 is the jackpot payout (max win on a roll)
 
-		// if each bet is relatively small, resolve the bet in-house
-		if (betPerCredit < MINBET_forORACLIZE){
+		// equation for gas to oraclize is:
+		// gas = (some fixed gas amt) + 3270 * credits
 
-			// randomness will be determined by keccak256(blockhash, nonce)
-			// store these into memory for cheap access
-			bytes32 blockHash = block.blockhash(block.number);
+		uint256 gasToSend = INITIALGASFORORACLIZE + (uint256(3270) * credits);
 
-			// use dialsSpun as a nonce for the oraclize return random bytes.
-			uint256 dialsSpun;
+		EOSBetBankrollInterface(BANKROLLER).payOraclize(oraclize_getPrice('random', gasToSend));
 
-			// dial1, dial2, dial3 are the items that the wheel lands on, represented by uints 0-6
-			// these are then echoed to the front end by data1, data2, data3
-			uint8 dial1;
-			uint8 dial2;
-			uint8 dial3;
+		// oraclize_newRandomDSQuery(delay in seconds, bytes of random data, gas for callback function)
+		bytes32 oraclizeQueryId = oraclize_newRandomDSQuery(0, 30, gasToSend);
 
-			// these are used ONLY for log data for the frontend
-			// each dial of the machine can be between 0 and 6 (see below table for distribution)
-			// therefore, each dial takes 3 BITS of space -> uint(bits('111')) == 7, uint(bits('000')) == 0
-			// so dataX can hold 256 bits/(3 bits * 3 dials) = 28.444 -> 28 spins worth of data 
-			uint256[] memory logsData = new uint256[](8);
+		// add the new slots data to a mapping so that the oraclize __callback can use it later
+		slotsData[oraclizeQueryId] = SlotsGameData({
+			player : msg.sender,
+			paidOut : false,
+			start : block.timestamp,
+			etherReceived : msg.value,
+			credits : credits
+		});
 
-			// this is incremented every time a player hits a spot of the wheel that pays out
-			// at the end this is multiplied by the betPerCredit amount to determine how much the game should payout.
-			uint256 payout;
+		// add the sent value into liabilities. this should NOT go into the bankroll yet
+		// and must be quarantined here to prevent timing attacks
+		LIABILITIES = SafeMath.add(LIABILITIES, msg.value);
 
-			// Now, loop over each credit.
-			// Please note that this loop is almost identical to the loop in the __callback from oraclize
-			// Modular-izing the loops into a single function is impossible because solidity can only store 16 variables into memory
-			// also, it would cost increased gas for each spin.
-			for (uint8 i = 0; i < credits; i++){
-
-				// spin the first dial
-				dialsSpun += 1;
-				dial1 = uint8(uint(keccak256(blockHash, dialsSpun)) % 64);
-				// spin the second dial
-				dialsSpun += 1;
-				dial2 = uint8(uint(keccak256(blockHash, dialsSpun)) % 64);
-				// spin the third dial
-				dialsSpun += 1;
-				dial3 = uint8(uint(keccak256(blockHash, dialsSpun)) % 64);
-
-				// dial 1, based on above table
-				dial1 = getDial1Type(dial1);
-
-				// dial 2, based on above table
-				dial2 = getDial2Type(dial2);
-
-				// dial 3, based on above table
-				dial3 = getDial3Type(dial3);
-
-				// determine the payouts (all in uint8)
-
-				payout += determinePayout(dial1, dial2, dial3);
-
-				// Here we assemble uint256's of log data so that the frontend can "replay" the spins
-				// each "dial" is a uint8 but can only be between 0-6, so would only need 3 bits to store this. uint(bits('111')) = 7
-				// 2 ** 3 is the bitshift operator for three bits 
-				if (i <= 27){
-					// in logsData0
-					logsData[0] += uint256(dial1) * uint256(2) ** (3 * ((3 * (27 - i)) + 2));
-					logsData[0] += uint256(dial2) * uint256(2) ** (3 * ((3 * (27 - i)) + 1));
-					logsData[0] += uint256(dial3) * uint256(2) ** (3 * ((3 * (27 - i))));
-				}
-				else if (i <= 55){
-					// in logsData1
-					logsData[1] += uint256(dial1) * uint256(2) ** (3 * ((3 * (55 - i)) + 2));
-					logsData[1] += uint256(dial2) * uint256(2) ** (3 * ((3 * (55 - i)) + 1));
-					logsData[1] += uint256(dial3) * uint256(2) ** (3 * ((3 * (55 - i))));
-				}
-				else if (i <= 83) {
-					// in logsData2
-					logsData[2] += uint256(dial1) * uint256(2) ** (3 * ((3 * (83 - i)) + 2));
-					logsData[2] += uint256(dial2) * uint256(2) ** (3 * ((3 * (83 - i)) + 1));
-					logsData[2] += uint256(dial3) * uint256(2) ** (3 * ((3 * (83 - i))));
-				}
-				else if (i <= 111) {
-					// in logsData3
-					logsData[3] += uint256(dial1) * uint256(2) ** (3 * ((3 * (111 - i)) + 2));
-					logsData[3] += uint256(dial2) * uint256(2) ** (3 * ((3 * (111 - i)) + 1));
-					logsData[3] += uint256(dial3) * uint256(2) ** (3 * ((3 * (111 - i))));
-				}
-				else if (i <= 139){
-					// in logsData4
-					logsData[4] += uint256(dial1) * uint256(2) ** (3 * ((3 * (139 - i)) + 2));
-					logsData[4] += uint256(dial2) * uint256(2) ** (3 * ((3 * (139 - i)) + 1));
-					logsData[4] += uint256(dial3) * uint256(2) ** (3 * ((3 * (139 - i))));
-				}
-				else if (i <= 167){
-					// in logsData5
-					logsData[5] += uint256(dial1) * uint256(2) ** (3 * ((3 * (167 - i)) + 2));
-					logsData[5] += uint256(dial2) * uint256(2) ** (3 * ((3 * (167 - i)) + 1));
-					logsData[5] += uint256(dial3) * uint256(2) ** (3 * ((3 * (167 - i))));
-				}
-				else if (i <= 195){
-					// in logsData6
-					logsData[6] += uint256(dial1) * uint256(2) ** (3 * ((3 * (195 - i)) + 2));
-					logsData[6] += uint256(dial2) * uint256(2) ** (3 * ((3 * (195 - i)) + 1));
-					logsData[6] += uint256(dial3) * uint256(2) ** (3 * ((3 * (195 - i))));
-				}
-				else {
-					// in logsData7
-					logsData[7] += uint256(dial1) * uint256(2) ** (3 * ((3 * (223 - i)) + 2));
-					logsData[7] += uint256(dial2) * uint256(2) ** (3 * ((3 * (223 - i)) + 1));
-					logsData[7] += uint256(dial3) * uint256(2) ** (3 * ((3 * (223 - i))));
-				}
-			}
-
-			// add these new dials to the storage variable DIALSSPUN
-			DIALSSPUN += dialsSpun;
-
-			// and add the amount wagered
-			AMOUNTWAGERED = SafeMath.add(AMOUNTWAGERED, msg.value);
-
-			// calculate amount for the developers fund.
-			// this is: value of ether * (5% house edge) * (20% cut)
-			uint256 developersCut = msg.value / 100;
-
-			// add this to the developers fund.
-			DEVELOPERSFUND = SafeMath.add(DEVELOPERSFUND, developersCut);
-
-			// transfer the (msg.value - developersCut) to the bankroll
-			EOSBetBankrollInterface(BANKROLLER).receiveEtherFromGameAddress.value(SafeMath.sub(msg.value, developersCut))();
-
-			// now payout ether
-			uint256 etherPaidout = SafeMath.mul(betPerCredit, payout);
-
-			// make the bankroll transfer the paidout amount to the player
-			EOSBetBankrollInterface(BANKROLLER).payEtherToWinner(etherPaidout, msg.sender);
-
-			// and lastly, log an event
-			// log the data logs that were created above, we will not use event watchers here, but will use the txReceipt to get logs instead.
-			emit SlotsSmallBet(logsData[0], logsData[1], logsData[2], logsData[3], logsData[4], logsData[5], logsData[6], logsData[7]);
-
-		}
-		// if the bet amount is OVER the oraclize query limit, we must get the randomness from oraclize.
-		// This is because miners are inventivized to interfere with the block.blockhash, in an attempt
-		// to get more favorable rolls/slot spins/etc.
-		else {
-			// oraclize_newRandomDSQuery(delay in seconds, bytes of random data, gas for callback function)
-			bytes32 oraclizeQueryId;
-
-			// equation for gas to oraclize is:
-			// gas = (some fixed gas amt) + 3270 * credits
-			
-			uint256 gasToSend = INITIALGASFORORACLIZE + (uint256(3270) * credits);
-
-			EOSBetBankrollInterface(BANKROLLER).payOraclize(oraclize_getPrice('random', gasToSend));
-
-			oraclizeQueryId = oraclize_newRandomDSQuery(0, 30, gasToSend);
-
-			// add the new slots data to a mapping so that the oraclize __callback can use it later
-			slotsData[oraclizeQueryId] = SlotsGameData({
-				player : msg.sender,
-				paidOut : false,
-				start : block.timestamp,
-				etherReceived : msg.value,
-				credits : credits
-			});
-
-			// add the sent value into liabilities. this should NOT go into the bankroll yet
-			// and must be quarantined here to prevent timing attacks
-			LIABILITIES = SafeMath.add(LIABILITIES, msg.value);
-
-			emit BuyCredits(oraclizeQueryId);
-		}
+		emit BuyCredits(oraclizeQueryId);
 	}
 
 	function __callback(bytes32 _queryId, string _result, bytes _proof) public {

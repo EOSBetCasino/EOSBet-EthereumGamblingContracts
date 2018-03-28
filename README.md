@@ -43,7 +43,7 @@ contract EOSBetGameInterface {
 }
 ```
 
-First, we have the `DEVELOPERSFUND`. 20% of the game profit will increment this fund. This is taken by `betSize * numberOfBets * houseEdge * 20%`. T
+First, we have the `DEVELOPERSFUND`. 20% of the game profit will increment this fund. This is taken by `betSize * numberOfBets * houseEdge * 20%`.
 
 Second, we have the `LIABILITIES`. All large bets will initially increment the liabilities when forwarding the randomness call to oraclize.it. When oraclize calls back, `LIABILITIES` will decrement, and the bet is treated like a normal bet.
 
@@ -63,7 +63,7 @@ Again, we have a suicide/selfdestruct function, this will be taken out for produ
 
 `play(uint256 betPerRoll, uint16 rolls, uint8 rollUnder) payable` is the main function in this contract. Players are allowed to specify the amount of bet for each roll of dice, the total number of rolls, and the number that they are trying to roll under. (Ex: a choice of 77 means that 1-76 are the winning numbers, and 77-100 are losers!)
 
-The bet infomation will then be saved `SSTORE` and then oraclize will be called to supply randomness, to resolve the bet safely.
+The bet infomation will then be saved (`SSTORE`) and then oraclize will be called to supply randomness, to resolve the bet safely.
 
 Once oraclize calls the `__callback()` function the bet will start to resolve. We check the oraclize ledger proof to return `0` as required. If the oraclize proof fails, then we just refund the player immediately. Clearly, there is an issue where oraclize could chose to only (correcly) `__callback` if they are going to win, and just make the ledger proof fail if they lose. However, other gambling contracts put vastly more trust into oraclize than we do (where they could just outright win every single game) so we have decided to give them the benefit of the doubt here.
 

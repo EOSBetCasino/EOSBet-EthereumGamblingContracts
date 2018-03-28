@@ -39,7 +39,8 @@ contract EOSBetDice is usingOraclize, EOSBetGameInterface {
 	// togglable values
 	uint256 public ORACLIZEQUERYMAXTIME;
 	uint256 public MINBET_forORACLIZE;
-	uint256 public MINBET;
+	uint256 public MINBET_perROLL;
+	uint256 public MINBET_perTX;
 	uint256 public ORACLIZEGASPRICE;
 	uint256 public INITIALGASFORORACLIZE;
 	uint8 public HOUSEEDGE_inTHOUSANDTHPERCENTS; // 1 thousanthpercent == 1/1000, 
@@ -73,7 +74,8 @@ contract EOSBetDice is usingOraclize, EOSBetGameInterface {
 
 		ORACLIZEQUERYMAXTIME = 6 hours;
 		MINBET_forORACLIZE = 350 finney; // 0.35 ether is a limit to prevent an incentive for miners to cheat, any more will be forwarded to oraclize!
-		MINBET = 5 finney; // currently this is around $2-2.50 per spin, which is comparable with a very cheap casino
+		MINBET_perROLL = 10 finney; // currently this is around $4-4.50 per spin, which is comparable with a quite cheap casino
+		MINBET_perTX = 100 finney;
 		HOUSEEDGE_inTHOUSANDTHPERCENTS = 5; // 5/1000 == 0.5% house edge
 		MAXWIN_inTHOUSANDTHPERCENTS = 35; // 35/1000 == 3.5% of bankroll can be won in a single bet, will be lowered once there is more investors
 		OWNER = msg.sender;
@@ -177,10 +179,16 @@ contract EOSBetDice is usingOraclize, EOSBetGameInterface {
 		MINBET_forORACLIZE = minBet;
 	}
 
-	function setMinBet(uint256 minBet) public {
+	function setMinBetPerRoll(uint256 minBet) public {
 		require(msg.sender == OWNER && minBet > 1000);
 
-		MINBET = minBet;
+		MINBET_perROLL = minBet;
+	}
+
+	function setMinBetPerTx(uint256 minBet) public {
+		require(msg.sender == OWNER && minBet > 1000);
+
+		MINBET_perTX = minBet;
 	}
 
 	function setMaxWin(uint8 newMaxWinInThousandthPercents) public {
@@ -226,8 +234,8 @@ contract EOSBetDice is usingOraclize, EOSBetGameInterface {
 	function play(uint256 betPerRoll, uint16 rolls, uint8 rollUnder) public payable {
 
 		require(!GAMEPAUSED
-				&& msg.value > 0
-				&& betPerRoll >= MINBET
+				&& msg.value >= MINBET_perTX
+				&& betPerRoll >= MINBET_perROLL
 				&& rolls > 0
 				&& rolls <= 1024
 				&& betPerRoll <= msg.value

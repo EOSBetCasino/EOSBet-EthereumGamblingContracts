@@ -37,7 +37,8 @@ contract EOSBetSlots is usingOraclize, EOSBetGameInterface {
 	// togglable values
 	uint256 public ORACLIZEQUERYMAXTIME;
 	uint256 public MINBET_forORACLIZE;
-	uint256 public MINBET;
+	uint256 public MINBET_perROLL;
+	uint256 public MINBET_perTX;
 	uint256 public ORACLIZEGASPRICE;
 	uint256 public INITIALGASFORORACLIZE;
 	uint16 public MAXWIN_inTHOUSANDTHPERCENTS;
@@ -70,7 +71,8 @@ contract EOSBetSlots is usingOraclize, EOSBetGameInterface {
 
 		ORACLIZEQUERYMAXTIME = 6 hours;
 		MINBET_forORACLIZE = 350 finney; // 0.35 ether is the max bet to avoid miner cheating. see python sim. on our github
-		MINBET = 1 finney; // currently, this is ~40-50c a spin, which is pretty average slots. This is changeable by OWNER 
+		MINBET_perROLL = 2 finney; // currently, this is ~40-50c a spin, which is pretty average slots. This is changeable by OWNER 
+		MINBET_perTX = 10 finney;
         MAXWIN_inTHOUSANDTHPERCENTS = 300; // 300/1000 so a jackpot can take 30% of bankroll (extremely rare)
         OWNER = msg.sender;
 	}
@@ -166,10 +168,16 @@ contract EOSBetSlots is usingOraclize, EOSBetGameInterface {
 		MINBET_forORACLIZE = minBet;
 	}
 
-	function setMinBet(uint256 minBet) public {
+	function setMinBetPerRoll(uint256 minBet) public {
 		require(msg.sender == OWNER && minBet > 1000);
 
-		MINBET = minBet;
+		MINBET_perROLL = minBet;
+	}
+
+	function setMinBetPerTx(uint256 minBet) public {
+		require(msg.sender == OWNER && minBet > 1000);
+
+		MINBET_perTX = minBet;
 	}
 
 	function setMaxwin(uint16 newMaxWinInThousandthPercents) public {
@@ -217,8 +225,8 @@ contract EOSBetSlots is usingOraclize, EOSBetGameInterface {
 		// require that the game is unpaused, and that the credits being purchased are greater than 0 and less than the allowed amount, default: 100 spins 
 		// verify that the bet is less than or equal to the bet limit, so we don't go bankrupt, and that the etherreceived is greater than the minbet.
 		require(!GAMEPAUSED
-			&& msg.value > 0
-			&& betPerCredit >= MINBET
+			&& msg.value >= MINBET_perTX
+			&& betPerCredit >= MINBET_perROLL
 			&& credits > 0 
 			&& credits <= 224
 			&& SafeMath.mul(betPerCredit, 5000) <= getMaxWin()); // 5000 is the jackpot payout (max win on a roll)

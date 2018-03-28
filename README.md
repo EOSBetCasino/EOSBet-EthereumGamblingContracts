@@ -2,7 +2,7 @@
 
 ## This is the directory for our Ethereum Gambling contracts.
 
-### We are currently running a bug bounty, please see the Reddit thread:
+### We are currently running a bug bounty, please see the Reddit thread: https://www.reddit.com/r/ethdev/comments/87oa2i/eosbetio_fully_decentralized_gambling_bug_bounty/
 
 #### Here is a quick description of our gambling system:
 
@@ -12,13 +12,7 @@ The bankroll contract is in charge of holding all the funds for the games.
 
 The games are in charge of taking bets, and interacting with the bankroll contract to payout players, and to receive the players losses.
 
-Randomness generation is an important part of any gambling contractm, and we are proud of our approach towards getting provable randomness. We are assuming you are familiar with the classic argument against getting randomness from `block.blockhash(block.number)`, because a miner could "throw away" a block that does not grant the miner a win, and try and mine a new block (and take the small loss by sumbitting an uncle, later, if the miner does not mine a new block). We have ran some python simulations, and can verify that we are at a risk of miner cheating for bets >=0.35 Ether.
-
-Therefore, our solution is simple. For small bets <0.35 Ether, we simply use `block.blockhash(block.number)` to get randomness. Doing this, we get a faster turn around on bets, and we don't have to pay an oraclize.it fee for off-chain randomness.
-
-However, for larger bets, we must be careful against miner cheating. For bets >=0.35 Ether, we use oraclize.it's random-datasource call, and then resolve the bet when they call our `__callback()` function.
-
-Another problem, with current on-chain gambling offerings, is the fact that Ethereum transactions are pretty slow, and unfortunately there's no way of getting around slow transacions. However, we allow bettors to "pre-purchase" up to 224 spins for slots, and 1024 rolls for dice. They then just have to wait for 1 transaction to resolve, and then get to use our pretty front end (work-in-progress) to resolve the bets, and have fun gambling!
+A problem with current on-chain gambling offerings, is the fact that Ethereum transactions are pretty slow, and unfortunately there's no way of getting around slow transacions. However, we allow bettors to "pre-purchase" up to 224 spins for slots, and 1024 rolls for dice. They then just have to wait for 1 transaction to resolve (+ a transaction from Oraclize), and then get to use our pretty front end (work-in-progress) to resolve the bets, and have fun gambling at their own pace!
 
 Again, the bankroll is used to payout players, and pay for any oraclize fees that will be charged to the Dice or Slots contract.
 
@@ -69,11 +63,11 @@ Again, we have a suicide/selfdestruct function, this will be taken out for produ
 
 `play(uint256 betPerRoll, uint16 rolls, uint8 rollUnder) payable` is the main function in this contract. Players are allowed to specify the amount of bet for each roll of dice, the total number of rolls, and the number that they are trying to roll under. (Ex: a choice of 77 means that 1-76 are the winning numbers, and 77-100 are losers!)
 
-After doing necessary checks, the game has two options. If the `betPerRoll < MINBET_forORACLIZE` then the roll is resolved using `block.blockhash(block.number)`.
+The bet infomation will then be saved `SSTORE` and then oraclize will be called to supply randomness, to resolve the bet safely.
 
-If not, then the bet infomation will be saved `SSTORE` and then oraclize will be called to supply randomness, to resolve the bet safely.
+Once oraclize calls the `__callback()` function the bet will start to resolve. We check the oraclize ledger proof to return `0` as required. If the oraclize proof fails, then we just refund the player immediately. Clearly, there is an issue where oraclize could chose to only (correcly) `__callback` if they are going to win, and just make the ledger proof fail if they lose. However, other gambling contracts put vastly more trust into oraclize than we do (where they could just outright win every single game) so we have decided to give them the benefit of the doubt here.
 
-After this point, the `__callback()` function and the `play()` function behave similarly.
+**However**, if we feel that oraclize is cheating (will be easily detectable), then we can just toggle off `REFUNDSACTIVE`. We would like to keep them on, of course, so that our players have a better experience. :)
 
 A while loop starts, `while (gamesPlayed < rolls && etherAvailable >= betPerRoll)` where either every single roll will resolve as specified by the player, *or* the player will go bankrupt. 
 
@@ -81,17 +75,15 @@ A winning roll will credit based on the roll under number according to the stand
 
 Once either all rolls resolve, or the player doesn't have the funds to play another roll, then the bankroll will receive the initial captial used to bet (subtracting from `LIABILITIES` if this is in the `__callback`), and the bankroll will send any winnings to the player. The wins are sent **SAFELY** by using msg.sender.send(amt), and catching failures. If a .send() fails, then the amount gets sent to the OWNER instead. We could have implemented some sort of fund recovery fairly easily, but decided to just not allow external contracts (with excessive logic in `function () payable`) to call our contracts. If you MUST call our gaming contracts with an external contract with a bunch of fallback logic, you are clearly doing something sketchy, and can contact us to recover your funds :)
 
+*Note that if the `OWNER` send fails, then the funds will be given to our bankroll investors, because we change the `OWNER` address to be a contract, then we are also doing something sketchy.*
+
 Lastly, we must log some events so that the frontend knows what happened to the dice game. Logs can get expensive, so we did this the cheapest way. The frontend really just needs to know whether the player one or lost a game, so we can represent each game result using binary. (Ex: 10011 = win, loss, loss, win, win). 
-
-In the `__callback` function, it is basically the same gameplay. However, note that we check the oraclize ledger proof to return `0` as required. If the oraclize proof fails, then we just refund the player immediately. Clearly, there is an issue where oraclize could chose to only (correcly) `__callback` if they are going to win, and just make the ledger proof fail if they lose. However, other gambling contracts put vastly more trust into oraclize than we do (where they could just outright win every single game) so we have decided to give them the benefit of the doubt here.
-
-**However**, if we feel that oraclize is cheating (will be easily detectable), then we can just toggle off `REFUNDSACTIVE`. We would like to keep them on, of course, so that our players have a better experience. :)
 
 ##### EOSBetSlots.sol
 
 Slots is a *very* similar contract, of course, and just about everything that was said about dice, also applies to slots. However, the gameplay is obviously different, and more complex.
 
-Here, the `play(uint8 credits) payable` function only takes 1 argument, `credits`, and the amount bet per credit will just be `msg.value / credits`. Again, we do the necessary checks, and either forward to oraclize, or resolve in-house. The vast majority of bets for slots will be resolved in house, because it will take a large bankroll (and some really aggressive playing) to take the `betPerSpin >= 0.35 ether` so that oraclize must be called (this is because out jackpot is so large, at 5000x and we **must** be able to pay out the jackpot, and not go bankrupt, of course.)
+Here, the `play(uint8 credits) payable` function only takes 1 argument, `credits`, and the amount bet per credit will just be `msg.value / credits`. Again, we do the necessary checks, and forward the bet to oraclize.
 
 There are 64 positions on the slots dial, and given the combinations, and their payouts, we have a 4.9% house edge, which is **very** generous. The standard casino does something between 15%-25% on slots, which is absolutely brutal.
 
@@ -144,7 +136,7 @@ We have `payEtherToWinner(uint256 amtEther, address winner)` which safely sends 
 
 We have `receiveEtherFromGameAddress() payable` which is the function that the game contracts call when sending the bet ether to the bankroll. The function can only be called by a game contract, that get specified at initialization.
 
-`payOraclize(uint256 amountToPay)` will send any amount to a game contract that calls this function. The game contracts calculate how much ether is going to be needed from oraclize, and then call this function to get the money from the BANKROLLER. The function can only be called by a game contract, that get specified at initialization.
+`payOraclize(uint256 amountToPay)` will send any amount to a game contract that calls this function. The game contracts calculate how much ether is going to be needed from oraclize, and then call this function to get the money from the BANKROLLER. The function can only be called by a game contract, whose addresses get specified at initialization.
 
 Our fallback function `function () public payable` is the way that users can stake our bankroll. They can send any amount of ether to our contract, and receive a proportional amount of accounting tokens. There is a cap on the amount that can be contributed, denoted by `MAXIMUMINVESTMENTSALLOWED` however this can be raised and lowered by the OWNER. If our contracts catch fire, we might want to limit deposits, so it doesn't get too out of hand ;)
 
@@ -158,8 +150,7 @@ Note that there is a required stake time that users must leave their funds locke
 
 `withdrawDevelopersFund(address receiver)` tells DICE and SLOTS to give their `DEVELOPERSFUND` to a specified address. It also has the bankroll give any accumulated `DEVELOPERSFUND` to the same address, and then zeros out all these counters on all the contracts.
 
-
-After this, is just basic ERC20 functionality. We do not allow users to transfer tokens until their locktime is up, or it would be too difficult to keep track of which tokens are not allowed to be cashed out. We also do not allow transfers to address(this) because it will just burn tokens. ALL ERC20 CONTRACTS NEED TO START DOING THIS, TOO MANY TOKENS GET WASTED!
+After this, is just basic ERC20 functionality. We do not allow users to transfer tokens until their locktime is up, or it would be too difficult to keep track of which tokens are not allowed to be cashed out. We also do not allow transfers to address(this) because it will just burn tokens.
 
 ###### usingOraclize.sol
 

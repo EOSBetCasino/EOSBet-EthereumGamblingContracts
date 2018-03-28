@@ -40,7 +40,6 @@ contract EOSBetDice is usingOraclize, EOSBetGameInterface {
 	uint256 public ORACLIZEQUERYMAXTIME;
 	uint256 public MINBET_forORACLIZE;
 	uint256 public MINBET_perROLL;
-	uint256 public MINBET_perTX;
 	uint256 public ORACLIZEGASPRICE;
 	uint256 public INITIALGASFORORACLIZE;
 	uint8 public HOUSEEDGE_inTHOUSANDTHPERCENTS; // 1 thousanthpercent == 1/1000, 
@@ -75,7 +74,6 @@ contract EOSBetDice is usingOraclize, EOSBetGameInterface {
 		ORACLIZEQUERYMAXTIME = 6 hours;
 		MINBET_forORACLIZE = 350 finney; // 0.35 ether is a limit to prevent an incentive for miners to cheat, any more will be forwarded to oraclize!
 		MINBET_perROLL = 10 finney; // currently this is around $4-4.50 per spin, which is comparable with a quite cheap casino
-		MINBET_perTX = 100 finney;
 		HOUSEEDGE_inTHOUSANDTHPERCENTS = 5; // 5/1000 == 0.5% house edge
 		MAXWIN_inTHOUSANDTHPERCENTS = 35; // 35/1000 == 3.5% of bankroll can be won in a single bet, will be lowered once there is more investors
 		OWNER = msg.sender;
@@ -106,6 +104,15 @@ contract EOSBetDice is usingOraclize, EOSBetGameInterface {
 
 	function getMaxWin() public view returns(uint256){
 		return (SafeMath.mul(EOSBetBankrollInterface(BANKROLLER).getBankroll(), MAXWIN_inTHOUSANDTHPERCENTS) / 1000);
+	}
+
+	function isNotContractCaller(address caller) public view returns(bool){
+		uint256 codeSize;
+		if (caller == address(0)) return true;
+		assembly {
+			size := extcodesize(caller)
+		}
+		return size == 0;
 	}
 
 	////////////////////////////////////
@@ -185,12 +192,6 @@ contract EOSBetDice is usingOraclize, EOSBetGameInterface {
 		MINBET_perROLL = minBet;
 	}
 
-	function setMinBetPerTx(uint256 minBet) public {
-		require(msg.sender == OWNER && minBet > 1000);
-
-		MINBET_perTX = minBet;
-	}
-
 	function setMaxWin(uint8 newMaxWinInThousandthPercents) public {
 		// cannot set bet limit greater than 5% of total BANKROLL.
 		require(msg.sender == OWNER && newMaxWinInThousandthPercents <= 50);
@@ -234,7 +235,8 @@ contract EOSBetDice is usingOraclize, EOSBetGameInterface {
 	function play(uint256 betPerRoll, uint16 rolls, uint8 rollUnder) public payable {
 
 		require(!GAMEPAUSED
-				&& msg.value >= MINBET_perTX
+				&& isNotContractCaller(msg.sender)
+				&& msg.value > 0
 				&& betPerRoll >= MINBET_perROLL
 				&& rolls > 0
 				&& rolls <= 1024
@@ -249,7 +251,7 @@ contract EOSBetDice is usingOraclize, EOSBetGameInterface {
 
 			// randomness will be determined by keccak256(blockhash, nonce)
 			// store these in memory for cheap access.
-			bytes32 blockHash = block.blockhash(block.number);
+			bytes32 blockHash = block.blockhash(block.number - 1);
 			uint8 houseEdgeInThousandthPercents = HOUSEEDGE_inTHOUSANDTHPERCENTS;
 
 			// these are variables that will be modified when the game runs
@@ -334,6 +336,7 @@ contract EOSBetDice is usingOraclize, EOSBetGameInterface {
 		// // when oraclize calls back, we will reinstantiate the game data and resolve 
 		// // the spins with the random number given by oraclize 
 		else {
+
 			// oraclize_newRandomDSQuery(delay in seconds, bytes of random data, gas for callback function)
 			bytes32 oraclizeQueryId;
 

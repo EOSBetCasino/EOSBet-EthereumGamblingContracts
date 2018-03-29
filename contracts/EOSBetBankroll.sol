@@ -352,7 +352,6 @@ contract EOSBetBankroll is ERC20, EOSBetBankrollInterface {
 	// and don't allow transfers to this contract addr, it'll just kill tokens
 	function transfer(address _to, uint256 _value) public returns (bool success){
 		require(balances[msg.sender] >= _value 
-			&& _value > 0 
 			&& contributionTime[msg.sender] + WAITTIMEUNTILWITHDRAWORTRANSFER <= block.timestamp
 			&& _to != address(this)
 			&& _to != address(0));
@@ -371,7 +370,6 @@ contract EOSBetBankroll is ERC20, EOSBetBankrollInterface {
 	function transferFrom(address _from, address _to, uint _value) public returns(bool){
 		require(allowed[_from][msg.sender] >= _value 
 			&& balances[_from] >= _value 
-			&& _value > 0 
 			&& contributionTime[_from] + WAITTIMEUNTILWITHDRAWORTRANSFER <= block.timestamp
 			&& _to != address(this)
 			&& _to != address(0));

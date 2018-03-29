@@ -351,58 +351,48 @@ contract EOSBetBankroll is ERC20, EOSBetBankrollInterface {
 	// don't allow transfers before the required wait-time
 	// and don't allow transfers to this contract addr, it'll just kill tokens
 	function transfer(address _to, uint256 _value) public returns (bool success){
-		if (balances[msg.sender] >= _value 
+		require(balances[msg.sender] >= _value 
 			&& _value > 0 
 			&& contributionTime[msg.sender] + WAITTIMEUNTILWITHDRAWORTRANSFER <= block.timestamp
-			&& _to != address(this)){
+			&& _to != address(this)
+			&& _to != address(0));
 
-			// safely subtract
-			balances[msg.sender] = SafeMath.sub(balances[msg.sender], _value);
-			balances[_to] = SafeMath.add(balances[_to], _value);
+		// safely subtract
+		balances[msg.sender] = SafeMath.sub(balances[msg.sender], _value);
+		balances[_to] = SafeMath.add(balances[_to], _value);
 
-			// log event 
-			emit Transfer(msg.sender, _to, _value);
-			return true;
-		}
-		else {
-			return false;
-		}
+		// log event 
+		emit Transfer(msg.sender, _to, _value);
+		return true;
 	}
 
 	// don't allow transfers before the required wait-time
 	// and don't allow transfers to the contract addr, it'll just kill tokens
 	function transferFrom(address _from, address _to, uint _value) public returns(bool){
-		if (allowed[_from][msg.sender] >= _value 
+		require(allowed[_from][msg.sender] >= _value 
 			&& balances[_from] >= _value 
 			&& _value > 0 
 			&& contributionTime[_from] + WAITTIMEUNTILWITHDRAWORTRANSFER <= block.timestamp
-			&& _to != address(this)){
+			&& _to != address(this)
+			&& _to != address(0));
 
-			// safely add to _to and subtract from _from, and subtract from allowed balances.
-			balances[_to] = SafeMath.add(balances[_to], _value);
-	   		balances[_from] = SafeMath.sub(balances[_from], _value);
-	  		allowed[_from][msg.sender] = SafeMath.sub(allowed[_from][msg.sender], _value);
+		// safely add to _to and subtract from _from, and subtract from allowed balances.
+		balances[_to] = SafeMath.add(balances[_to], _value);
+   		balances[_from] = SafeMath.sub(balances[_from], _value);
+  		allowed[_from][msg.sender] = SafeMath.sub(allowed[_from][msg.sender], _value);
 
-	  		// log event
-    		emit Transfer(_from, _to, _value);
-    		return true;
-   		} 
-    	else { 
-    		return false;
-    	}
+  		// log event
+		emit Transfer(_from, _to, _value);
+		return true;
+   		
 	}
 	
 	function approve(address _spender, uint _value) public returns(bool){
-		if(_value > 0){
 
-			allowed[msg.sender][_spender] = _value;
-			emit Approval(msg.sender, _spender, _value);
-			// log event
-			return true;
-		}
-		else {
-			return false;
-		}
+		allowed[msg.sender][_spender] = _value;
+		emit Approval(msg.sender, _spender, _value);
+		// log event
+		return true;
 	}
 	
 	function allowance(address _owner, address _spender) constant public returns(uint){

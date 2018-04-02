@@ -38,7 +38,6 @@ contract EOSBetDice is usingOraclize, EOSBetGameInterface {
 	
 	// togglable values
 	uint256 public ORACLIZEQUERYMAXTIME;
-	uint256 public MINBET_forORACLIZE;
 	uint256 public MINBET_perROLL;
 	uint256 public MINBET_perTX;
 	uint256 public ORACLIZEGASPRICE;
@@ -62,8 +61,8 @@ contract EOSBetDice is usingOraclize, EOSBetGameInterface {
 		oraclize_setProof(proofType_Ledger);
 
 		// gas prices for oraclize call back, can be changed
-		oraclize_setCustomGasPrice(10000000000);
-		ORACLIZEGASPRICE = 10000000000;
+		oraclize_setCustomGasPrice(8000000000);
+		ORACLIZEGASPRICE = 8000000000;
 		INITIALGASFORORACLIZE = 225000;
 
 		AMOUNTWAGERED = 0;
@@ -73,7 +72,6 @@ contract EOSBetDice is usingOraclize, EOSBetGameInterface {
 		REFUNDSACTIVE = true;
 
 		ORACLIZEQUERYMAXTIME = 6 hours;
-		MINBET_forORACLIZE = 350 finney; // 0.35 ether is a limit to prevent an incentive for miners to cheat, any more will be forwarded to oraclize!
 		MINBET_perROLL = 10 finney; // currently this is around $4-4.50 per spin, which is comparable with a quite cheap casino
 		MINBET_perTX = 100 finney;
 		HOUSEEDGE_inTHOUSANDTHPERCENTS = 5; // 5/1000 == 0.5% house edge
@@ -170,13 +168,6 @@ contract EOSBetDice is usingOraclize, EOSBetGameInterface {
 		require(msg.sender == OWNER && houseEdgeInThousandthPercents <= 50);
 
 		HOUSEEDGE_inTHOUSANDTHPERCENTS = houseEdgeInThousandthPercents;
-	}
-
-	// setting this to 0 would just force all bets through oraclize, and setting to MAX_UINT_256 would never use oraclize 
-	function setMinBetForOraclize(uint256 minBet) public {
-		require(msg.sender == OWNER);
-
-		MINBET_forORACLIZE = minBet;
 	}
 
 	function setMinBetPerRoll(uint256 minBet) public {

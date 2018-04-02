@@ -36,8 +36,7 @@ contract EOSBetSlots is usingOraclize, EOSBetGameInterface {
 	
 	// togglable values
 	uint256 public ORACLIZEQUERYMAXTIME;
-	uint256 public MINBET_forORACLIZE;
-	uint256 public MINBET_perROLL;
+	uint256 public MINBET_perSPIN;
 	uint256 public MINBET_perTX;
 	uint256 public ORACLIZEGASPRICE;
 	uint256 public INITIALGASFORORACLIZE;
@@ -59,8 +58,8 @@ contract EOSBetSlots is usingOraclize, EOSBetGameInterface {
 		oraclize_setProof(proofType_Ledger);
 
 		// gas prices for oraclize call back, can be changed
-		oraclize_setCustomGasPrice(10000000000);
-		ORACLIZEGASPRICE = 10000000000;
+		oraclize_setCustomGasPrice(8000000000);
+		ORACLIZEGASPRICE = 8000000000;
 		INITIALGASFORORACLIZE = 225000;
 
 		AMOUNTWAGERED = 0;
@@ -70,10 +69,9 @@ contract EOSBetSlots is usingOraclize, EOSBetGameInterface {
 		REFUNDSACTIVE = true;
 
 		ORACLIZEQUERYMAXTIME = 6 hours;
-		MINBET_forORACLIZE = 350 finney; // 0.35 ether is the max bet to avoid miner cheating. see python sim. on our github
-		MINBET_perROLL = 2 finney; // currently, this is ~40-50c a spin, which is pretty average slots. This is changeable by OWNER 
+		MINBET_perSPIN = 2 finney; // currently, this is ~40-50c a spin, which is pretty average slots. This is changeable by OWNER 
 		MINBET_perTX = 10 finney;
-        MAXWIN_inTHOUSANDTHPERCENTS = 300; // 300/1000 so a jackpot can take 30% of bankroll (extremely rare)
+        MAXWIN_inTHOUSANDTHPERCENTS = 333; // 333/1000 so a jackpot can take 33% of bankroll (extremely rare)
         OWNER = msg.sender;
 	}
 
@@ -161,17 +159,10 @@ contract EOSBetSlots is usingOraclize, EOSBetGameInterface {
 		REFUNDSACTIVE = active;
 	}
 
-	// setting this to 0 would just force all bets through oraclize, and setting to MAX_UINT_256 would never use oraclize 
-	function setMinBetForOraclize(uint256 minBet) public {
-		require(msg.sender == OWNER);
-
-		MINBET_forORACLIZE = minBet;
-	}
-
-	function setMinBetPerRoll(uint256 minBet) public {
+	function setMinBetPerSpin(uint256 minBet) public {
 		require(msg.sender == OWNER && minBet > 1000);
 
-		MINBET_perROLL = minBet;
+		MINBET_perSPIN = minBet;
 	}
 
 	function setMinBetPerTx(uint256 minBet) public {
@@ -226,7 +217,7 @@ contract EOSBetSlots is usingOraclize, EOSBetGameInterface {
 		// verify that the bet is less than or equal to the bet limit, so we don't go bankrupt, and that the etherreceived is greater than the minbet.
 		require(!GAMEPAUSED
 			&& msg.value >= MINBET_perTX
-			&& betPerCredit >= MINBET_perROLL
+			&& betPerCredit >= MINBET_perSPIN
 			&& credits > 0 
 			&& credits <= 224
 			&& SafeMath.mul(betPerCredit, 5000) <= getMaxWin()); // 5000 is the jackpot payout (max win on a roll)

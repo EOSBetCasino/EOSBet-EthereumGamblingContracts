@@ -72,7 +72,7 @@ contract EOSBetDice is usingOraclize, EOSBetGameInterface {
 		REFUNDSACTIVE = true;
 
 		ORACLIZEQUERYMAXTIME = 6 hours;
-		MINBET_perROLL = 10 finney; // currently this is around $4-4.50 per spin, which is comparable with a quite cheap casino
+		MINBET_perROLL = 20 finney;
 		MINBET_perTX = 100 finney;
 		HOUSEEDGE_inTHOUSANDTHPERCENTS = 5; // 5/1000 == 0.5% house edge
 		MAXWIN_inTHOUSANDTHPERCENTS = 35; // 35/1000 == 3.5% of bankroll can be won in a single bet, will be lowered once there is more investors

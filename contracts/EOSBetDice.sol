@@ -63,7 +63,7 @@ contract EOSBetDice is usingOraclize, EOSBetGameInterface {
 		// gas prices for oraclize call back, can be changed
 		oraclize_setCustomGasPrice(8000000000);
 		ORACLIZEGASPRICE = 8000000000;
-		INITIALGASFORORACLIZE = 225000;
+		INITIALGASFORORACLIZE = 300000;
 
 		AMOUNTWAGERED = 0;
 		GAMESPLAYED = 0;
@@ -242,7 +242,7 @@ contract EOSBetDice is usingOraclize, EOSBetGameInterface {
 				&& rolls <= 1024
 				&& betPerRoll <= msg.value
 				&& rollUnder > 1
-				&& rollUnder < 100
+				&& rollUnder < 98
 				// make sure that the player cannot win more than the max win (forget about house edge here)
 				&& (SafeMath.mul(betPerRoll, 100) / (rollUnder - 1)) <= getMaxWin());
 

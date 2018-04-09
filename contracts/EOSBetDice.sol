@@ -75,7 +75,7 @@ contract EOSBetDice is usingOraclize, EOSBetGameInterface {
 		MINBET_perROLL = 20 finney;
 		MINBET_perTX = 100 finney;
 		HOUSEEDGE_inTHOUSANDTHPERCENTS = 5; // 5/1000 == 0.5% house edge
-		MAXWIN_inTHOUSANDTHPERCENTS = 35; // 35/1000 == 3.5% of bankroll can be won in a single bet, will be lowered once there is more investors
+		MAXWIN_inTHOUSANDTHPERCENTS = 20; // 20/1000 == 2.0% of bankroll can be won in a single bet, will be lowered once there is more investors
 		OWNER = msg.sender;
 	}
 

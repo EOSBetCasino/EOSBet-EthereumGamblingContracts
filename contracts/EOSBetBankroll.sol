@@ -97,10 +97,7 @@ contract EOSBetBankroll is ERC20, EOSBetBankrollInterface {
 		DICE = dice;
 		SLOTS = slots;
 
-		////////////////////////////////////////////////
-		// CHANGE TO 6 HOURS ON LIVE DEPLOYMENT
-		////////////////////////////////////////////////
-		WAITTIMEUNTILWITHDRAWORTRANSFER = 0 seconds;
+		WAITTIMEUNTILWITHDRAWORTRANSFER = 6 hours;
 		MAXIMUMINVESTMENTSALLOWED = 500 ether;
 	}
 

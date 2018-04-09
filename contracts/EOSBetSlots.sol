@@ -453,11 +453,11 @@ contract EOSBetSlots is usingOraclize, EOSBetGameInterface {
 	// 3x Gold Ether					//	1777  //
 	// 3x Silver Ether					//	250   //
 	// 3x Bronze Ether					//	250   //
-	//  3x any Ether 					//	95    //
 	// Bronze P -> Silver P -> Gold P	//	90    //
+	// 3x any Ether 					//	70    //
 	// 3x Gold Planet 					//	50    //
 	// 3x Silver Planet					//	25    //
-	// Any Gold P & Silver P & Bronze P //	20    //
+	// Any Gold P & Silver P & Bronze P //	15    //
 	// 3x Bronze Planet					//	10    //
 	// Any 3 planet type				//	3     //
 	// Any 3 gold						//	3     //
@@ -481,7 +481,7 @@ contract EOSBetSlots is usingOraclize, EOSBetGameInterface {
 			// one gold planet, one silver planet, one bronze planet, any order!
 			// note: other order covered above, return 90
 			else if (dial2 == 3 && dial3 == 4)
-				return 20;
+				return 15;
 
 			// all bronze planet 
 			else if (dial2 == 5 && dial3 == 5) 
@@ -502,7 +502,7 @@ contract EOSBetSlots is usingOraclize, EOSBetGameInterface {
 
 			// one gold planet, one silver planet, one bronze planet, any order!
 			else if ((dial2 == 3 && dial3 == 5) || (dial2 == 5 && dial3 == 3))
-				return 20;
+				return 15;
 
 			// any three planet type 
 			else if (dial2 >= 3 && dial2 <= 5 && dial3 >= 3 && dial3 <= 5)
@@ -519,7 +519,7 @@ contract EOSBetSlots is usingOraclize, EOSBetGameInterface {
 
 			// one gold planet, one silver planet, one bronze planet, any order!
 			else if ((dial2 == 4 && dial3 == 5) || (dial2 == 5 && dial3 == 4))
-				return 20;
+				return 15;
 
 			// any three planet type 
 			else if (dial2 >= 3 && dial2 <= 5 && dial3 >= 3 && dial3 <= 5)
@@ -539,7 +539,7 @@ contract EOSBetSlots is usingOraclize, EOSBetGameInterface {
 
 			// all some type of ether
 			else if (dial2 >= 0 && dial2 <= 2 && dial3 >= 0 && dial3 <= 2)
-				return 95;
+				return 70;
 
 			// any three bronze
 			else if ((dial2 == 2 || dial2 == 5) && (dial3 == 2 || dial3 == 5))
@@ -552,7 +552,7 @@ contract EOSBetSlots is usingOraclize, EOSBetGameInterface {
 
 			// all some type of ether
 			else if (dial2 >= 0 && dial2 <= 2 && dial3 >= 0 && dial3 <= 2)
-				return 95;
+				return 70;
 
 			// any three silver
 			else if ((dial2 == 1 || dial2 == 4) && (dial3 == 1 || dial3 == 4))
@@ -565,7 +565,7 @@ contract EOSBetSlots is usingOraclize, EOSBetGameInterface {
 
 			// all some type of ether
 			else if (dial2 >= 0 && dial2 <= 2 && dial3 >= 0 && dial3 <= 2)
-				return 95;
+				return 70;
 
 			// any three gold
 			else if ((dial2 == 0 || dial2 == 3) && (dial3 == 0 || dial3 == 3))

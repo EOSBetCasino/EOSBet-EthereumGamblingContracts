@@ -333,13 +333,6 @@ contract EOSBetBankroll is ERC20, EOSBetBankrollInterface {
 		ERC20(tokenAddress).transfer(msg.sender, amtTokens);
 	}
 
-	// Can be removed after some testing...
-	function emergencySelfDestruct() public {
-		require(msg.sender == OWNER);
-
-		selfdestruct(msg.sender);
-	}
-
 	///////////////////////////////
 	// BASIC ERC20 TOKEN OPERATIONS
 	///////////////////////////////

@@ -184,13 +184,6 @@ contract EOSBetSlots is usingOraclize, EOSBetGameInterface {
 		ERC20(tokenAddress).transfer(msg.sender, amtTokens);
 	}
 
-	// this can be deleted after some testing.
-	function emergencySelfDestruct() public {
-		require(msg.sender == OWNER);
-
-		selfdestruct(msg.sender);
-	}
-
 	function refund(bytes32 oraclizeQueryId) public {
 		// save into memory for cheap access
 		SlotsGameData memory data = slotsData[oraclizeQueryId];

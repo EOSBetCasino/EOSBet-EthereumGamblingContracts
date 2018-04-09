@@ -196,13 +196,6 @@ contract EOSBetDice is usingOraclize, EOSBetGameInterface {
 		ERC20(tokenAddress).transfer(msg.sender, amtTokens);
 	}
 
-	// Can be removed after some testing...
-	function emergencySelfDestruct() public {
-		require(msg.sender == OWNER);
-
-		selfdestruct(msg.sender);
-	}
-
 	// require that the query time is too slow, bet has not been paid out, and either contract owner or player is calling this function.
 	// this will only be used/can occur on queries that are forwarded to oraclize in the first place. All others will be paid out immediately.
 	function refund(bytes32 oraclizeQueryId) public {

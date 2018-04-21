@@ -2,8 +2,6 @@
 
 ## This is the directory for our Ethereum Gambling contracts.
 
-### We are currently running a bug bounty, please see the Reddit thread: https://www.reddit.com/r/ethdev/comments/87oa2i/eosbetio_fully_decentralized_gambling_bug_bounty/
-
 #### Here is a quick description of our gambling system:
 
 Our contract system is fairly simple. There are 3 main contracts, `EOSBetBankroll.sol`, `EOSBetSlots.sol`, and `EOSBetDice.sol`.
@@ -154,7 +152,7 @@ After this, is just basic ERC20 functionality. We do not allow users to transfer
 
 ###### usingOraclize.sol
 
-This is the standard oraclize contract, and is out of scope of this bug bounty. But, if there are issues you find, definitely bring it up with the oraclize team, I'm sure they have a much larger bounty than I could afford!
+This is the standard oraclize contract. If there are issues you find, definitely bring it up with the oraclize team, I'm sure they have a much larger bounty than I could afford!
 
 ##### SafeMath.sol
 
@@ -162,14 +160,12 @@ This is standard Zeppelin SafeMath, again, issues should be brought up with the 
 
 ##### END
 
-This is the end of the contract descriptions, please see this reddit thread for more details about our audit, we have some generous payouts!
-
 Please submit any issues to our GitHub, and feel free to contact development@EOSBet.IO with any issues.
 
-If you are privacy centric, please use our PGP Key below. We will also payout our bug bounty in Monero, if desired.
+If you are privacy centric, please use our PGP Key below.
 
 Cheers!
-EOSBet.IO
+Team EOSBet
 
 
 ```
